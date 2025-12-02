@@ -106,12 +106,12 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
             </Select>
             <Button onClick={onExport} variant="outline" className="w-full md:w-auto">
                 <FileDown className="mr-2 h-4 w-4" />
-                Download Excel
+                Download
             </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <Table>
+      <CardContent className="overflow-x-auto">
+        <Table className="min-w-[800px] md:min-w-full">
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>

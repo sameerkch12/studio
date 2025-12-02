@@ -5,9 +5,9 @@ import type { DateRange } from "react-day-picker";
 import { PlusCircle, Wallet, X, FileDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import { collection, doc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, Timestamp } from 'firebase/firestore';
 
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import type { DeliveryEntry, AdvancePayment, DeliveryBoy } from '@/lib/types';
 import { DELIVERY_BOY_RATE } from '@/lib/types';
 
@@ -28,9 +28,9 @@ export default function Dashboard() {
 
   const firestore = useFirestore();
 
-  const deliveryRecordsCollection = useMemoFirebase(() => collection(firestore, 'delivery_records'), [firestore]);
-  const advancePaymentsCollection = useMemoFirebase(() => collection(firestore, 'advance_payments'), [firestore]);
-  const deliveryBoysCollection = useMemoFirebase(() => collection(firestore, 'delivery_boys'), [firestore]);
+  const deliveryRecordsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'delivery_records') : null, [firestore]);
+  const advancePaymentsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'advance_payments') : null, [firestore]);
+  const deliveryBoysCollection = useMemoFirebase(() => firestore ? collection(firestore, 'delivery_boys') : null, [firestore]);
 
   const { data: entriesData, isLoading: entriesLoading } = useCollection<Omit<DeliveryEntry, 'id'>>(deliveryRecordsCollection);
   const { data: advancesData, isLoading: advancesLoading } = useCollection<Omit<AdvancePayment, 'id'>>(advancePaymentsCollection);
@@ -38,10 +38,11 @@ export default function Dashboard() {
 
   const entries = useMemo(() => entriesData?.map(e => ({...e, date: (e.date as Timestamp).toDate()})) || [], [entriesData]);
   const advances = useMemo(() => advancesData?.map(a => ({...a, date: (a.date as Timestamp).toDate()})) || [], [advancesData]);
-  const deliveryBoys = useMemo(() => deliveryBoysData?.map(b => b.name) || [], [deliveryBoysData]);
+  const deliveryBoys = useMemo(() => deliveryBoysData?.map(b => b.name).sort((a, b) => a.localeCompare(b)) || [], [deliveryBoysData]);
 
   const addEntry = (entry: Omit<DeliveryEntry, 'id'>) => {
-    addDoc(deliveryRecordsCollection, {
+    if (!deliveryRecordsCollection) return;
+    addDocumentNonBlocking(deliveryRecordsCollection, {
       ...entry,
       date: Timestamp.fromDate(entry.date as Date)
     });
@@ -49,7 +50,8 @@ export default function Dashboard() {
   };
 
   const addAdvance = (advance: Omit<AdvancePayment, 'id'>) => {
-     addDoc(advancePaymentsCollection, {
+    if (!advancePaymentsCollection) return;
+     addDocumentNonBlocking(advancePaymentsCollection, {
        ...advance,
        date: Timestamp.fromDate(advance.date as Date)
       });
@@ -57,7 +59,8 @@ export default function Dashboard() {
   };
 
   const deleteEntry = (id: string) => {
-    deleteDoc(doc(firestore, 'delivery_records', id));
+    if (!firestore) return;
+    deleteDocumentNonBlocking(doc(firestore, 'delivery_records', id));
   };
   
   const filteredEntriesByDate = entries.filter(entry => {
@@ -141,10 +144,10 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
         <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <DateRangePicker date={dateRange} onDateChange={setDateRange} className="w-full sm:w-auto" />
             {dateRange && (
-                <Button variant="ghost" size="icon" onClick={() => setDateRange(undefined)} className="h-9 w-9">
+                <Button variant="ghost" size="icon" onClick={() => setDateRange(undefined)} className="h-9 w-9 flex-shrink-0">
                     <X className="h-4 w-4" />
                     <span className="sr-only">Clear date filter</span>
                 </Button>
@@ -157,7 +160,7 @@ export default function Dashboard() {
                   <Wallet className="mr-2 h-4 w-4" /> Add Advance
                 </Button>
               </SheetTrigger>
-              <SheetContent className="sm:max-w-lg overflow-y-auto">
+              <SheetContent className="w-full max-w-full sm:max-w-lg overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Add Advance Payment</SheetTitle>
                   <SheetDescription>
@@ -172,10 +175,10 @@ export default function Dashboard() {
             <Sheet open={isDeliverySheetOpen} onOpenChange={setDeliverySheetOpen}>
               <SheetTrigger asChild>
                 <Button className="w-1/2 sm:w-auto">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Daily Entry
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Entry
                 </Button>
               </SheetTrigger>
-              <SheetContent className="sm:max-w-lg overflow-y-auto">
+              <SheetContent className="w-full max-w-full sm:max-w-lg overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>Add New Delivery Record</SheetTitle>
                   <SheetDescription>
