@@ -36,8 +36,9 @@ export default function EarningsChart({ entries, advances }: EarningsChartProps)
 
     if ('delivered' in item) { // It's a DeliveryEntry
       const entry = item as DeliveryEntry;
-      acc[name].payout += entry.delivered * DELIVERY_BOY_RATE;
-      acc[name].profit += entry.delivered * profitRate;
+      const workDone = entry.delivered + entry.rvp;
+      acc[name].payout += workDone * DELIVERY_BOY_RATE;
+      acc[name].profit += workDone * profitRate;
       acc[name].advance += entry.advance; // on-spot advance
       acc[name].codShortage += entry.expectedCod - entry.actualCodCollected;
     } else { // It's an AdvancePayment

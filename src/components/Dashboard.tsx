@@ -79,7 +79,7 @@ export default function Dashboard() {
   const handleExcelExport = () => {
     const dataToExport = finalFilteredEntries.map(entry => {
         const codShortage = entry.expectedCod - entry.actualCodCollected;
-        const payout = entry.delivered * DELIVERY_BOY_RATE - entry.advance - codShortage;
+        const payout = (entry.delivered + entry.rvp) * DELIVERY_BOY_RATE - entry.advance - codShortage;
         return {
             'Date': new Date(entry.date).toLocaleDateString('en-GB'),
             'Delivery Boy': entry.deliveryBoyName,
@@ -110,7 +110,7 @@ export default function Dashboard() {
             .filter(a => a.deliveryBoyName === selectedBoy)
             .reduce((acc, a) => acc + a.amount, 0);
         const totalAdvance = totalOnSpotAdvance + totalSeparateAdvance;
-        const totalPayout = (totalDelivered * DELIVERY_BOY_RATE) - totalCODShortage - totalAdvance;
+        const totalPayout = ((totalDelivered + totalRVP) * DELIVERY_BOY_RATE) - totalCODShortage - totalAdvance;
 
         const summaryData = [
             {}, // empty row for spacing
@@ -205,5 +205,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    

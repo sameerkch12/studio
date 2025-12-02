@@ -107,7 +107,7 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
                 </TableRow>
             ) : data.map((entry) => {
               const codShortage = entry.expectedCod - entry.actualCodCollected;
-              const payout = entry.delivered * DELIVERY_BOY_RATE - entry.advance - codShortage;
+              const payout = (entry.delivered + entry.rvp) * DELIVERY_BOY_RATE - entry.advance - codShortage;
               const totalParcels = entry.delivered + entry.rvp;
 
               return (
@@ -201,5 +201,3 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
     </Card>
   );
 }
-
-    

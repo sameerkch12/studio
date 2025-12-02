@@ -1,7 +1,7 @@
 import type { DeliveryEntry, AdvancePayment } from "@/lib/types";
 import { DELIVERY_BOY_RATE, COMPANY_RATE } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IndianRupee, PackageCheck, TrendingUp, Wallet } from "lucide-react";
+import { IndianRupee, PackageCheck, TrendingUp, Wallet, PackageOpen } from "lucide-react";
 
 type SummaryCardsProps = {
   entries: DeliveryEntry[];
@@ -10,6 +10,8 @@ type SummaryCardsProps = {
 
 export default function SummaryCards({ entries, advances }: SummaryCardsProps) {
   const totalDelivered = entries.reduce((acc, entry) => acc + entry.delivered, 0);
+  const totalRVP = entries.reduce((acc, entry) => acc + entry.rvp, 0);
+  const totalWork = totalDelivered + totalRVP;
   
   const totalActualCod = entries.reduce((acc, entry) => acc + entry.actualCodCollected, 0);
   
@@ -19,10 +21,10 @@ export default function SummaryCards({ entries, advances }: SummaryCardsProps) {
   
   const totalCodShortage = entries.reduce((acc, entry) => acc + (entry.expectedCod - entry.actualCodCollected), 0);
 
-  const totalGrossPayout = totalDelivered * DELIVERY_BOY_RATE;
+  const totalGrossPayout = totalWork * DELIVERY_BOY_RATE;
   const totalNetPayout = totalGrossPayout - totalAdvance - totalCodShortage;
   
-  const totalCompanyEarning = totalDelivered * COMPANY_RATE;
+  const totalCompanyEarning = totalWork * COMPANY_RATE;
   const totalProfit = totalCompanyEarning - totalGrossPayout;
 
   const formatCurrency = (amount: number) => {
@@ -37,12 +39,12 @@ export default function SummaryCards({ entries, advances }: SummaryCardsProps) {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Delivered</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Work Done</CardTitle>
           <PackageCheck className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totalDelivered.toLocaleString('en-IN')}</div>
-          <p className="text-xs text-muted-foreground">parcels delivered</p>
+          <div className="text-2xl font-bold">{totalWork.toLocaleString('en-IN')}</div>
+          <p className="text-xs text-muted-foreground">{totalDelivered} Delivered + {totalRVP} RVP</p>
         </CardContent>
       </Card>
       <Card>
