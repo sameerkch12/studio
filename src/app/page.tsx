@@ -1,13 +1,10 @@
-import Header from '@/components/Header';
+import AppLayout from "@/components/AppLayout";
 import Dashboard from '@/components/Dashboard';
 
 export default function Home() {
   return (
-    <div className="flex flex-col">
-      <Header />
-      <main className="flex-1">
-        <Dashboard />
-      </main>
-    </div>
+    <AppLayout>
+      <Dashboard />
+    </AppLayout>
   );
 }

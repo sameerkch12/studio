@@ -9,9 +9,14 @@
         "name": {
           "type": "string",
           "description": "Name of the delivery boy."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the delivery boy was added."
         }
       },
-      "required": ["name"]
+      "required": ["name", "createdAt"]
     },
     "DeliveryRecord": {
       "title": "DeliveryRecord",
@@ -100,6 +105,10 @@
     "/advance_payments/{paymentId}": {
       "schema": { "$ref": "#/entities/AdvancePayment" },
       "description": "Stores all separate advance payments made."
+    },
+    "/delivery_boys/{boyId}": {
+      "schema": { "$ref": "#/entities/DeliveryBoy" },
+      "description": "Stores the list of all delivery boys."
     }
   }
 }

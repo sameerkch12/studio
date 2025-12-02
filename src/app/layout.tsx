@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
+import Header from '@/components/Header';
 
 export const metadata: Metadata = {
   title: 'Delivery Tracker Pro',
@@ -22,6 +23,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen">
         <FirebaseClientProvider>
+          <Header />
           <div className="flex-1">
             {children}
           </div>

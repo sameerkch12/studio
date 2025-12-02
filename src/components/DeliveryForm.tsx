@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import React from "react";
 
 const formSchema = z.object({
-  deliveryBoyName: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  deliveryBoyName: z.string({ required_error: "Please select a delivery boy." }).min(1, { message: "Please select a delivery boy." }),
   date: z.date({
     required_error: "A date is required.",
   }),
@@ -40,7 +40,6 @@ type DeliveryFormProps = {
 export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormProps) {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -82,7 +81,6 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
         rvp: 0,
         advance: 0,
     });
-    setInputValue("");
   }
 
   return (
@@ -107,8 +105,10 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
                             )}
                         >
                             {field.value
-                            ? field.value
-                            : "Select or type a name"}
+                            ? deliveryBoys.find(
+                                (boy) => boy === field.value
+                            )
+                            : "Select a name"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                         </FormControl>
@@ -116,28 +116,17 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                         <Command>
                         <CommandInput 
-                            placeholder="Search or add new..."
-                            value={inputValue}
-                            onValueChange={(search) => {
-                                setInputValue(search);
-                                if (!deliveryBoys.find(boy => boy.toLowerCase() === search.toLowerCase())) {
-                                    form.setValue("deliveryBoyName", search);
-                                }
-                            }}
+                            placeholder="Search name..."
                          />
                         <CommandList>
-                            <CommandEmpty>
-                                {inputValue ? `Add "${inputValue}" as a new delivery boy.` : "No delivery boy found."}
-                            </CommandEmpty>
+                            <CommandEmpty>No delivery boy found.</CommandEmpty>
                             <CommandGroup>
                                 {deliveryBoys.map((boy) => (
                                 <CommandItem
                                     value={boy}
                                     key={boy}
-                                    onSelect={(currentValue) => {
-                                        const val = currentValue === field.value ? "" : currentValue
-                                        form.setValue("deliveryBoyName", val)
-                                        setInputValue(val)
+                                    onSelect={() => {
+                                        form.setValue("deliveryBoyName", boy)
                                         setOpen(false)
                                     }}
                                 >

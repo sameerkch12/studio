@@ -8,7 +8,7 @@ import { saveAs } from 'file-saver';
 import { collection, doc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment, DeliveryBoy } from '@/lib/types';
 import { DELIVERY_BOY_RATE } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -30,12 +30,15 @@ export default function Dashboard() {
 
   const deliveryRecordsCollection = useMemoFirebase(() => collection(firestore, 'delivery_records'), [firestore]);
   const advancePaymentsCollection = useMemoFirebase(() => collection(firestore, 'advance_payments'), [firestore]);
+  const deliveryBoysCollection = useMemoFirebase(() => collection(firestore, 'delivery_boys'), [firestore]);
 
   const { data: entriesData, isLoading: entriesLoading } = useCollection<Omit<DeliveryEntry, 'id'>>(deliveryRecordsCollection);
   const { data: advancesData, isLoading: advancesLoading } = useCollection<Omit<AdvancePayment, 'id'>>(advancePaymentsCollection);
-  
+  const { data: deliveryBoysData, isLoading: boysLoading } = useCollection<Omit<DeliveryBoy, 'id'>>(deliveryBoysCollection);
+
   const entries = useMemo(() => entriesData?.map(e => ({...e, date: (e.date as Timestamp).toDate()})) || [], [entriesData]);
   const advances = useMemo(() => advancesData?.map(a => ({...a, date: (a.date as Timestamp).toDate()})) || [], [advancesData]);
+  const deliveryBoys = useMemo(() => deliveryBoysData?.map(b => b.name) || [], [deliveryBoysData]);
 
   const addEntry = (entry: Omit<DeliveryEntry, 'id'>) => {
     addDoc(deliveryRecordsCollection, {
@@ -56,8 +59,6 @@ export default function Dashboard() {
   const deleteEntry = (id: string) => {
     deleteDoc(doc(firestore, 'delivery_records', id));
   };
-  
-  const deliveryBoys = [...new Set([...(entries || []).map(e => e.deliveryBoyName), ...(advances || []).map(a => a.deliveryBoyName)])];
   
   const filteredEntriesByDate = entries.filter(entry => {
     if (!dateRange?.from) return true; // No start date, return all
@@ -133,7 +134,7 @@ export default function Dashboard() {
     saveAs(data, `delivery_records_${selectedBoy}_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
   
-  const isLoading = entriesLoading || advancesLoading;
+  const isLoading = entriesLoading || advancesLoading || boysLoading;
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
