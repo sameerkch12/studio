@@ -25,24 +25,32 @@ export default function EarningsChart({ entries }: { entries: DeliveryEntry[] })
 
   const dataByBoy = entries.reduce((acc, entry) => {
     if (!acc[entry.deliveryBoyName]) {
-      acc[entry.deliveryBoyName] = { name: entry.deliveryBoyName, payout: 0, profit: 0 };
+      acc[entry.deliveryBoyName] = { name: entry.deliveryBoyName, payout: 0, profit: 0, advance: 0 };
     }
     acc[entry.deliveryBoyName].payout += entry.delivered * DELIVERY_BOY_RATE;
     acc[entry.deliveryBoyName].profit += entry.delivered * profitRate;
+    acc[entry.deliveryBoyName].advance += entry.advance;
     return acc;
-  }, {} as Record<string, { name: string; payout: number; profit: number }>);
+  }, {} as Record<string, { name: string; payout: number; profit: number, advance: number }>);
 
-  const chartData = Object.values(dataByBoy).sort((a,b) => (b.payout + b.profit) - (a.payout + a.profit));
+  const chartData = Object.values(dataByBoy).map(boy => ({
+      ...boy,
+      netPayout: boy.payout - boy.advance
+  })).sort((a,b) => (b.payout + b.profit) - (a.payout + a.profit));
   
   const chartConfig = {
-    payout: {
-      label: 'Delivery Payout',
+    netPayout: {
+      label: 'Net Payout',
       color: 'hsl(var(--chart-1))',
     },
     profit: {
       label: 'Your Profit',
       color: 'hsl(var(--chart-2))',
     },
+    advance: {
+      label: 'Advance Paid',
+      color: 'hsl(var(--destructive))'
+    }
   } satisfies ChartConfig;
 
   const formatCurrency = (amount: number) => {
@@ -80,7 +88,7 @@ export default function EarningsChart({ entries }: { entries: DeliveryEntry[] })
                     <div className="flex min-w-[120px] items-center">
                       <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] mr-2" style={{backgroundColor: item.color}} />
                       <div className="flex flex-1 justify-between">
-                        <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig].label}</span>
+                        <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label || name}</span>
                         <span className="font-bold">{formatCurrency(Number(value))}</span>
                       </div>
                     </div>
@@ -88,7 +96,7 @@ export default function EarningsChart({ entries }: { entries: DeliveryEntry[] })
                  />}
               />
               <ChartLegend content={<ChartLegendContent />} />
-              <Bar dataKey="payout" stackId="a" fill="var(--color-payout)" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="netPayout" stackId="a" fill="var(--color-netPayout)" radius={[0, 4, 4, 0]} />
               <Bar dataKey="profit" stackId="a" fill="var(--color-profit)" radius={[4, 4, 4, 4]} />
             </BarChart>
           </ChartContainer>

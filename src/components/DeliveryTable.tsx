@@ -86,7 +86,10 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
                     <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"><PackageOpen className="mr-1 h-3 w-3"/>{entry.rvp}</Badge>
                 </TableCell>
                 <TableCell className="text-right">{formatCurrency(entry.codCollected)}</TableCell>
-                <TableCell className="text-right font-semibold text-primary">{formatCurrency(entry.delivered * DELIVERY_BOY_RATE)}</TableCell>
+                <TableCell className="text-right font-semibold text-primary">
+                    <div>{formatCurrency(entry.delivered * DELIVERY_BOY_RATE - entry.advance)}</div>
+                    {entry.advance > 0 && <div className="text-xs text-muted-foreground">({formatCurrency(entry.delivered * DELIVERY_BOY_RATE)} - {formatCurrency(entry.advance)} adv)</div>}
+                </TableCell>
                 <TableCell>
                   <AlertDialog>
                     <DropdownMenu>

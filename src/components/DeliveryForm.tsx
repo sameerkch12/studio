@@ -24,6 +24,7 @@ const formSchema = z.object({
   returned: z.coerce.number().int().min(0, { message: "Cannot be negative." }),
   codCollected: z.coerce.number().min(0, { message: "Cannot be negative." }),
   rvp: z.coerce.number().int().min(0, { message: "Cannot be negative." }),
+  advance: z.coerce.number().min(0, { message: "Cannot be negative." }),
 });
 
 type DeliveryFormProps = {
@@ -41,6 +42,7 @@ export default function DeliveryForm({ onAddEntry }: DeliveryFormProps) {
       returned: 0,
       codCollected: 0,
       rvp: 0,
+      advance: 0,
     },
   });
 
@@ -154,6 +156,22 @@ export default function DeliveryForm({ onAddEntry }: DeliveryFormProps) {
               <FormLabel>RVP Pickups</FormLabel>
               <FormControl>
                 <Input type="number" placeholder="e.g. 3" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="advance"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Advance Payment</FormLabel>
+              <FormControl>
+                 <div className="relative">
+                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input type="number" placeholder="e.g. 500" className="pl-8" {...field} />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -6,6 +6,7 @@ export type DeliveryEntry = {
   returned: number;
   codCollected: number;
   rvp: number;
+  advance: number;
 };
 
 export const DELIVERY_BOY_RATE = 14;

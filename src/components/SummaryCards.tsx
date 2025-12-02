@@ -10,9 +10,11 @@ type SummaryCardsProps = {
 export default function SummaryCards({ entries }: SummaryCardsProps) {
   const totalDelivered = entries.reduce((acc, entry) => acc + entry.delivered, 0);
   const totalCodCollected = entries.reduce((acc, entry) => acc + entry.codCollected, 0);
-  const totalPayout = totalDelivered * DELIVERY_BOY_RATE;
+  const totalAdvance = entries.reduce((acc, entry) => acc + entry.advance, 0);
+  const totalGrossPayout = totalDelivered * DELIVERY_BOY_RATE;
+  const totalNetPayout = totalGrossPayout - totalAdvance;
   const totalCompanyEarning = totalDelivered * COMPANY_RATE;
-  const totalProfit = totalCompanyEarning - totalPayout;
+  const totalProfit = totalCompanyEarning - totalGrossPayout;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -50,8 +52,8 @@ export default function SummaryCards({ entries }: SummaryCardsProps) {
           <Wallet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalPayout)}</div>
-          <p className="text-xs text-muted-foreground">to delivery boys</p>
+          <div className="text-2xl font-bold">{formatCurrency(totalNetPayout)}</div>
+          <p className="text-xs text-muted-foreground">after {formatCurrency(totalAdvance)} advance</p>
         </CardContent>
       </Card>
       <Card>
