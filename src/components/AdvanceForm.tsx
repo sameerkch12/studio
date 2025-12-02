@@ -33,6 +33,8 @@ type AdvanceFormProps = {
 export default function AdvanceForm({ onAddAdvance, deliveryBoys }: AdvanceFormProps) {
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,6 +56,7 @@ export default function AdvanceForm({ onAddAdvance, deliveryBoys }: AdvanceFormP
         date: new Date(),
         amount: 0,
     });
+    setInputValue("");
   }
 
   return (
@@ -78,9 +81,7 @@ export default function AdvanceForm({ onAddAdvance, deliveryBoys }: AdvanceFormP
                             )}
                         >
                             {field.value
-                            ? deliveryBoys.find(
-                                (boy) => boy === field.value
-                                )
+                            ? field.value
                             : "Select or type a name"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -88,16 +89,29 @@ export default function AdvanceForm({ onAddAdvance, deliveryBoys }: AdvanceFormP
                     </PopoverTrigger>
                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                         <Command>
-                        <CommandInput placeholder="Search or add new..." />
+                            <CommandInput
+                                placeholder="Search or add new..."
+                                value={inputValue}
+                                onValueChange={(search) => {
+                                    setInputValue(search);
+                                    if (!deliveryBoys.find(boy => boy.toLowerCase() === search.toLowerCase())) {
+                                        form.setValue("deliveryBoyName", search);
+                                    }
+                                }}
+                            />
                         <CommandList>
-                            <CommandEmpty>No delivery boy found.</CommandEmpty>
+                            <CommandEmpty>
+                                {inputValue ? `Add "${inputValue}" as a new delivery boy.` : "No delivery boy found."}
+                            </CommandEmpty>
                             <CommandGroup>
                                 {deliveryBoys.map((boy) => (
                                 <CommandItem
                                     value={boy}
                                     key={boy}
                                     onSelect={(currentValue) => {
-                                        form.setValue("deliveryBoyName", currentValue === field.value ? "" : currentValue)
+                                        const val = currentValue === field.value ? "" : currentValue
+                                        form.setValue("deliveryBoyName", val)
+                                        setInputValue(val)
                                         setOpen(false)
                                     }}
                                 >
