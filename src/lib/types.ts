@@ -20,6 +20,13 @@ export type AdvancePayment = {
   amount: number;
 };
 
+export type CompanyCodPayment = {
+    id: string;
+    date: Timestamp | Date;
+    amount: number;
+    notes?: string;
+};
+
 export type DeliveryBoy = {
   id: string;
   name: string;

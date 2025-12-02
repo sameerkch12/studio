@@ -2,19 +2,20 @@
 
 import { useState, useMemo } from 'react';
 import type { DateRange } from "react-day-picker";
-import { PlusCircle, Wallet, X, FileDown } from 'lucide-react';
+import { PlusCircle, Wallet, X, FileDown, Building } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { collection, doc, Timestamp } from 'firebase/firestore';
 
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import type { DeliveryEntry, AdvancePayment, DeliveryBoy } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment, DeliveryBoy, CompanyCodPayment } from '@/lib/types';
 import { DELIVERY_BOY_RATE } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import DeliveryForm from './DeliveryForm';
 import AdvanceForm from './AdvanceForm';
+import CompanyCodForm from './CompanyCodForm';
 import DeliveryTable from './DeliveryTable';
 import SummaryCards from './SummaryCards';
 import EarningsChart from './EarningsChart';
@@ -23,6 +24,7 @@ import { DateRangePicker } from './DateRangePicker';
 export default function Dashboard() {
   const [isDeliverySheetOpen, setDeliverySheetOpen] = useState(false);
   const [isAdvanceSheetOpen, setAdvanceSheetOpen] = useState(false);
+  const [isCompanyCodSheetOpen, setCompanyCodSheetOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [selectedBoy, setSelectedBoy] = useState('All');
 
@@ -31,14 +33,19 @@ export default function Dashboard() {
   const deliveryRecordsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'delivery_records') : null, [firestore]);
   const advancePaymentsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'advance_payments') : null, [firestore]);
   const deliveryBoysCollection = useMemoFirebase(() => firestore ? collection(firestore, 'delivery_boys') : null, [firestore]);
+  const companyCodPaymentsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'company_cod_payments') : null, [firestore]);
 
   const { data: entriesData, isLoading: entriesLoading } = useCollection<Omit<DeliveryEntry, 'id'>>(deliveryRecordsCollection);
   const { data: advancesData, isLoading: advancesLoading } = useCollection<Omit<AdvancePayment, 'id'>>(advancePaymentsCollection);
   const { data: deliveryBoysData, isLoading: boysLoading } = useCollection<Omit<DeliveryBoy, 'id'>>(deliveryBoysCollection);
+  const { data: companyCodPaymentsData, isLoading: companyCodPaymentsLoading } = useCollection<Omit<CompanyCodPayment, 'id'>>(companyCodPaymentsCollection);
+
 
   const entries = useMemo(() => entriesData?.map(e => ({...e, date: (e.date as Timestamp).toDate()})) || [], [entriesData]);
   const advances = useMemo(() => advancesData?.map(a => ({...a, date: (a.date as Timestamp).toDate()})) || [], [advancesData]);
   const deliveryBoys = useMemo(() => deliveryBoysData?.map(b => b.name).sort((a, b) => a.localeCompare(b)) || [], [deliveryBoysData]);
+  const companyCodPayments = useMemo(() => companyCodPaymentsData?.map(p => ({...p, date: (p.date as Timestamp).toDate()})) || [], [companyCodPaymentsData]);
+
 
   const addEntry = (entry: Omit<DeliveryEntry, 'id'>) => {
     if (!deliveryRecordsCollection) return;
@@ -57,6 +64,15 @@ export default function Dashboard() {
       });
     setAdvanceSheetOpen(false); // Close sheet after submission
   };
+
+  const addCompanyCodPayment = (payment: Omit<CompanyCodPayment, 'id'>) => {
+    if (!companyCodPaymentsCollection) return;
+    addDocumentNonBlocking(companyCodPaymentsCollection, {
+        ...payment,
+        date: Timestamp.fromDate(payment.date as Date)
+    });
+    setCompanyCodSheetOpen(false);
+  }
 
   const deleteEntry = (id: string) => {
     if (!firestore) return;
@@ -77,6 +93,14 @@ export default function Dashboard() {
     // Set time to end of the day for the 'to' date
     toDate.setHours(23, 59, 59, 999);
     return adv.date >= dateRange.from && adv.date <= toDate;
+  });
+
+  const filteredCompanyCodByDate = companyCodPayments.filter(payment => {
+    if (!dateRange?.from) return true; // No start date, return all
+    const toDate = dateRange.to ? new Date(dateRange.to) : new Date(dateRange.from);
+    // Set time to end of the day for the 'to' date
+    toDate.setHours(23, 59, 59, 999);
+    return payment.date >= dateRange.from && payment.date <= toDate;
   });
 
   const finalFilteredEntries = filteredEntriesByDate.filter(entry => {
@@ -137,7 +161,7 @@ export default function Dashboard() {
     saveAs(data, `delivery_records_${selectedBoy}_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
   
-  const isLoading = entriesLoading || advancesLoading || boysLoading;
+  const isLoading = entriesLoading || advancesLoading || boysLoading || companyCodPaymentsLoading;
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
@@ -153,11 +177,29 @@ export default function Dashboard() {
                 </Button>
             )}
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
+            <Sheet open={isCompanyCodSheetOpen} onOpenChange={setCompanyCodSheetOpen}>
+                <SheetTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                        <Building className="mr-2 h-4 w-4" /> Company
+                    </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full max-w-full sm:max-w-lg overflow-y-auto">
+                    <SheetHeader>
+                        <SheetTitle>Add COD to Company</SheetTitle>
+                        <SheetDescription>
+                            Record a COD payment made to the company.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="py-4">
+                        <CompanyCodForm onAddPayment={addCompanyCodPayment} />
+                    </div>
+                </SheetContent>
+            </Sheet>
             <Sheet open={isAdvanceSheetOpen} onOpenChange={setAdvanceSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" className="w-1/2 sm:w-auto">
-                  <Wallet className="mr-2 h-4 w-4" /> Add Advance
+                <Button variant="outline" className="w-full">
+                  <Wallet className="mr-2 h-4 w-4" /> Advance
                 </Button>
               </SheetTrigger>
               <SheetContent className="w-full max-w-full sm:max-w-lg overflow-y-auto">
@@ -174,8 +216,8 @@ export default function Dashboard() {
             </Sheet>
             <Sheet open={isDeliverySheetOpen} onOpenChange={setDeliverySheetOpen}>
               <SheetTrigger asChild>
-                <Button className="w-1/2 sm:w-auto">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Add Entry
+                <Button className="w-full">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Entry
                 </Button>
               </SheetTrigger>
               <SheetContent className="w-full max-w-full sm:max-w-lg overflow-y-auto">
@@ -194,7 +236,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <SummaryCards entries={filteredEntriesByDate} advances={filteredAdvancesByDate} />
+      <SummaryCards entries={filteredEntriesByDate} advances={filteredAdvancesByDate} companyCodPayments={filteredCompanyCodByDate} />
 
       <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-7">
         <div className="lg:col-span-4">

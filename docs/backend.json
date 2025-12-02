@@ -92,7 +92,28 @@
         }
       },
       "required": ["deliveryBoyName", "date", "amount"]
-    }
+    },
+    "CompanyCodPayment": {
+        "title": "CompanyCodPayment",
+        "type": "object",
+        "description": "Represents a COD amount paid to the main company.",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Date of the payment to the company.",
+            "format": "date-time"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount of COD paid."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for the payment."
+          }
+        },
+        "required": ["date", "amount"]
+      }
   },
   "auth": {
     "providers": ["anonymous"]
@@ -109,6 +130,10 @@
     "/delivery_boys/{boyId}": {
       "schema": { "$ref": "#/entities/DeliveryBoy" },
       "description": "Stores the list of all delivery boys."
+    },
+    "/company_cod_payments/{paymentId}": {
+        "schema": { "$ref": "#/entities/CompanyCodPayment" },
+        "description": "Stores all COD payments made to the company."
     }
   }
 }

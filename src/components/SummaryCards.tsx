@@ -1,19 +1,21 @@
-import type { DeliveryEntry, AdvancePayment } from "@/lib/types";
+import type { DeliveryEntry, AdvancePayment, CompanyCodPayment } from "@/lib/types";
 import { DELIVERY_BOY_RATE, COMPANY_RATE } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IndianRupee, PackageCheck, TrendingUp, Wallet, PackageOpen } from "lucide-react";
+import { IndianRupee, PackageCheck, TrendingUp, Wallet, Building } from "lucide-react";
 
 type SummaryCardsProps = {
   entries: DeliveryEntry[];
   advances: AdvancePayment[];
+  companyCodPayments: CompanyCodPayment[];
 };
 
-export default function SummaryCards({ entries, advances }: SummaryCardsProps) {
+export default function SummaryCards({ entries, advances, companyCodPayments }: SummaryCardsProps) {
   const totalDelivered = entries.reduce((acc, entry) => acc + entry.delivered, 0);
   const totalRVP = entries.reduce((acc, entry) => acc + entry.rvp, 0);
   const totalWork = totalDelivered + totalRVP;
   
   const totalActualCod = entries.reduce((acc, entry) => acc + entry.actualCodCollected, 0);
+  const totalPaidToCompany = companyCodPayments.reduce((acc, payment) => acc + payment.amount, 0);
   
   const totalOnSpotAdvance = entries.reduce((acc, entry) => acc + entry.advance, 0);
   const totalSeparateAdvance = advances.reduce((acc, adv) => acc + adv.amount, 0);
@@ -34,10 +36,10 @@ export default function SummaryCards({ entries, advances }: SummaryCardsProps) {
   };
   
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Work Done</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Work</CardTitle>
           <PackageCheck className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -53,13 +55,23 @@ export default function SummaryCards({ entries, advances }: SummaryCardsProps) {
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(totalActualCod)}</div>
           <p className="text-xs text-muted-foreground">
-            {totalCodShortage > 0 ? `${formatCurrency(totalCodShortage)} short from customers` : 'from customers'}
+            {totalCodShortage > 0 ? `${formatCurrency(totalCodShortage)} short` : 'from customers'}
           </p>
+        </CardContent>
+      </Card>
+       <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">COD to Company</CardTitle>
+          <Building className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(totalPaidToCompany)}</div>
+          <p className="text-xs text-muted-foreground">Total paid to company</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Payout</CardTitle>
+          <CardTitle className="text-sm font-medium">Net Payout</CardTitle>
           <Wallet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
