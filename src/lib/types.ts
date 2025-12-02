@@ -1,6 +1,8 @@
+import { Timestamp } from "firebase/firestore";
+
 export type DeliveryEntry = {
   id: string;
-  date: Date;
+  date: Timestamp;
   deliveryBoyName: string;
   delivered: number;
   returned: number;
@@ -13,7 +15,7 @@ export type DeliveryEntry = {
 
 export type AdvancePayment = {
   id: string;
-  date: Date;
+  date: Timestamp;
   deliveryBoyName: string;
   amount: number;
 };

@@ -1,197 +1,105 @@
+
 {
   "entities": {
     "DeliveryBoy": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "DeliveryBoy",
       "type": "object",
       "description": "Represents a delivery boy in the system.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the delivery boy.",
-          "format": "uuid"
-        },
         "name": {
           "type": "string",
           "description": "Name of the delivery boy."
-        },
-        "contactNumber": {
-          "type": "string",
-          "description": "Contact number of the delivery boy."
         }
       },
-      "required": [
-        "id",
-        "name",
-        "contactNumber"
-      ]
+      "required": ["name"]
     },
     "DeliveryRecord": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "DeliveryRecord",
       "type": "object",
       "description": "Represents a daily delivery record for a delivery boy.",
       "properties": {
-        "id": {
+        "deliveryBoyName": {
           "type": "string",
-          "description": "Unique identifier for the delivery record.",
-          "format": "uuid"
-        },
-        "deliveryBoyId": {
-          "type": "string",
-          "description": "Reference to DeliveryBoy. (Relationship: DeliveryBoy 1:N DeliveryRecord)"
+          "description": "Name of the delivery boy."
         },
         "date": {
           "type": "string",
           "description": "Date of the delivery record.",
           "format": "date-time"
         },
-        "parcelsDelivered": {
+        "delivered": {
           "type": "number",
-          "description": "Number of parcels delivered on the record date."
+          "description": "Number of parcels delivered."
         },
-        "returns": {
+        "returned": {
           "type": "number",
-          "description": "Number of parcels returned on the record date."
+          "description": "Number of parcels returned."
         },
-        "codCollected": {
+        "expectedCod": {
           "type": "number",
-          "description": "Amount of COD collected on the record date."
+          "description": "Expected COD amount."
         },
-        "rvpPickups": {
+        "actualCodCollected": {
           "type": "number",
-          "description": "Number of RVP (Return to Vendor Pickup) pickups on the record date."
+          "description": "Actual COD amount collected."
+        },
+        "codShortageReason": {
+          "type": "string",
+          "description": "Reason for any COD shortage."
+        },
+        "rvp": {
+          "type": "number",
+          "description": "Number of RVP (Return to Vendor Pickup) pickups."
+        },
+        "advance": {
+          "type": "number",
+          "description": "On-spot advance paid."
         }
       },
       "required": [
-        "id",
-        "deliveryBoyId",
+        "deliveryBoyName",
         "date",
-        "parcelsDelivered",
-        "returns",
-        "codCollected",
-        "rvpPickups"
+        "delivered",
+        "returned",
+        "expectedCod",
+        "actualCodCollected",
+        "rvp",
+        "advance"
       ]
     },
-    "PaymentRecord": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "PaymentRecord",
+    "AdvancePayment": {
+      "title": "AdvancePayment",
       "type": "object",
-      "description": "Represents a payment record for a delivery boy.",
+      "description": "Represents a separate advance payment to a delivery boy.",
       "properties": {
-        "id": {
+        "deliveryBoyName": {
           "type": "string",
-          "description": "Unique identifier for the payment record.",
-          "format": "uuid"
-        },
-        "deliveryBoyId": {
-          "type": "string",
-          "description": "Reference to DeliveryBoy. (Relationship: DeliveryBoy 1:N PaymentRecord)"
+          "description": "Name of the delivery boy receiving the advance."
         },
         "date": {
           "type": "string",
-          "description": "Date of the payment record.",
+          "description": "Date of the advance payment.",
           "format": "date-time"
         },
         "amount": {
           "type": "number",
-          "description": "Amount paid to the delivery boy."
-        },
-        "companyEarnings": {
-          "type": "number",
-          "description": "Amount earned by the company for all deliveries"
+          "description": "Amount of advance paid."
         }
       },
-      "required": [
-        "id",
-        "deliveryBoyId",
-        "date",
-        "amount",
-        "companyEarnings"
-      ]
+      "required": ["deliveryBoyName", "date", "amount"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["anonymous"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/delivery_boys/{deliveryBoyId}",
-        "definition": {
-          "entityName": "DeliveryBoy",
-          "schema": {
-            "$ref": "#/backend/entities/DeliveryBoy"
-          },
-          "description": "Stores delivery boy profiles. Uses path-based ownership for managing delivery boy specific data.",
-          "params": [
-            {
-              "name": "deliveryBoyId",
-              "description": "Unique identifier for the delivery boy."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/delivery_boys/{deliveryBoyId}/delivery_records/{deliveryRecordId}",
-        "definition": {
-          "entityName": "DeliveryRecord",
-          "schema": {
-            "$ref": "#/backend/entities/DeliveryRecord"
-          },
-          "description": "Stores daily delivery records for each delivery boy. Path-based ownership ensures only the delivery boy (or admin) can access these records.",
-          "params": [
-            {
-              "name": "deliveryBoyId",
-              "description": "Unique identifier for the delivery boy."
-            },
-            {
-              "name": "deliveryRecordId",
-              "description": "Unique identifier for the delivery record."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/delivery_boys/{deliveryBoyId}/payment_records/{paymentRecordId}",
-        "definition": {
-          "entityName": "PaymentRecord",
-          "schema": {
-            "$ref": "#/backend/entities/PaymentRecord"
-          },
-          "description": "Stores payment records for each delivery boy. Path-based ownership ensures only the delivery boy (or admin) can access these records.",
-          "params": [
-            {
-              "name": "deliveryBoyId",
-              "description": "Unique identifier for the delivery boy."
-            },
-            {
-              "name": "paymentRecordId",
-              "description": "Unique identifier for the payment record."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/roles_admin/{userId}",
-        "definition": {
-          "entityName": "AdminRole",
-          "schema": {
-            "$ref": "#/backend/entities/DeliveryBoy"
-          },
-          "description": "Collection to store admin roles. The existence of a document in this collection grants admin privileges to the corresponding user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "Unique identifier for the user with admin privileges."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore data structure is designed to efficiently store and manage delivery boy data, payment records, and related information. It prioritizes authorization independence by using path-based ownership for delivery boy data and leveraging denormalization where necessary. The structure enables secure list operations (QAPs) by segregating data into collections with homogeneous security postures. Specifically, the structure avoids using `get()` calls in security rules by utilizing path-based access control and storing roles directly in the database."
+    "/delivery_records/{recordId}": {
+      "schema": { "$ref": "#/entities/DeliveryRecord" },
+      "description": "Stores all delivery records from all delivery boys."
+    },
+    "/advance_payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/AdvancePayment" },
+      "description": "Stores all separate advance payments made."
+    }
   }
 }

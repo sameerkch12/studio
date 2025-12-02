@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { DateRange } from "react-day-picker";
-import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
 import { PlusCircle, Wallet, X, FileDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { collection, doc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
+import { DELIVERY_BOY_RATE } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
@@ -15,45 +19,45 @@ import DeliveryTable from './DeliveryTable';
 import SummaryCards from './SummaryCards';
 import EarningsChart from './EarningsChart';
 import { DateRangePicker } from './DateRangePicker';
-import { DELIVERY_BOY_RATE } from '@/lib/types';
-
-
-const initialDeliveries: DeliveryEntry[] = [
-  { id: '1', deliveryBoyName: 'Ramesh', date: new Date('2024-07-20'), delivered: 50, returned: 2, expectedCod: 15000, actualCodCollected: 15000, rvp: 3, advance: 500 },
-  { id: '2', deliveryBoyName: 'Suresh', date: new Date('2024-07-20'), delivered: 45, returned: 1, expectedCod: 12500, actualCodCollected: 12500, rvp: 1, advance: 0 },
-  { id: '3', deliveryBoyName: 'Ramesh', date: new Date('2024-07-21'), delivered: 55, returned: 0, expectedCod: 18000, actualCodCollected: 17500, codShortageReason: 'Lost 500', rvp: 5, advance: 1000 },
-  { id: '4', deliveryBoyName: 'Suresh', date: new Date('2024-07-21'), delivered: 62, returned: 3, expectedCod: 22000, actualCodCollected: 22000, rvp: 0, advance: 0 },
-];
-
-const initialAdvances: AdvancePayment[] = [
-    { id: 'adv-1', deliveryBoyName: 'Suresh', date: new Date('2024-07-19'), amount: 2000 },
-];
 
 export default function Dashboard() {
-  const [entries, setEntries] = useState<DeliveryEntry[]>(initialDeliveries);
-  const [advances, setAdvances] = useState<AdvancePayment[]>(initialAdvances);
   const [isDeliverySheetOpen, setDeliverySheetOpen] = useState(false);
   const [isAdvanceSheetOpen, setAdvanceSheetOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [selectedBoy, setSelectedBoy] = useState('All');
 
+  const firestore = useFirestore();
+
+  const deliveryRecordsCollection = useMemoFirebase(() => collection(firestore, 'delivery_records'), [firestore]);
+  const advancePaymentsCollection = useMemoFirebase(() => collection(firestore, 'advance_payments'), [firestore]);
+
+  const { data: entriesData, isLoading: entriesLoading } = useCollection<Omit<DeliveryEntry, 'id'>>(deliveryRecordsCollection);
+  const { data: advancesData, isLoading: advancesLoading } = useCollection<Omit<AdvancePayment, 'id'>>(advancePaymentsCollection);
+  
+  const entries = useMemo(() => entriesData?.map(e => ({...e, date: (e.date as Timestamp).toDate()})) || [], [entriesData]);
+  const advances = useMemo(() => advancesData?.map(a => ({...a, date: (a.date as Timestamp).toDate()})) || [], [advancesData]);
+
   const addEntry = (entry: Omit<DeliveryEntry, 'id'>) => {
-    const newEntry = { ...entry, id: crypto.randomUUID() };
-    setEntries(prevEntries => [newEntry, ...prevEntries].sort((a, b) => b.date.getTime() - a.date.getTime()));
+    addDoc(deliveryRecordsCollection, {
+      ...entry,
+      date: Timestamp.fromDate(entry.date as Date)
+    });
     setDeliverySheetOpen(false); // Close sheet after submission
   };
 
   const addAdvance = (advance: Omit<AdvancePayment, 'id'>) => {
-    const newAdvance = { ...advance, id: crypto.randomUUID() };
-    setAdvances(prevAdvances => [newAdvance, ...prevAdvances].sort((a, b) => b.date.getTime() - a.date.getTime()));
+     addDoc(advancePaymentsCollection, {
+       ...advance,
+       date: Timestamp.fromDate(advance.date as Date)
+      });
     setAdvanceSheetOpen(false); // Close sheet after submission
   };
 
   const deleteEntry = (id: string) => {
-    setEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
+    deleteDoc(doc(firestore, 'delivery_records', id));
   };
   
-  const deliveryBoys = [...new Set([...entries.map(e => e.deliveryBoyName), ...advances.map(a => a.deliveryBoyName)])];
+  const deliveryBoys = [...new Set([...(entries || []).map(e => e.deliveryBoyName), ...(advances || []).map(a => a.deliveryBoyName)])];
   
   const filteredEntriesByDate = entries.filter(entry => {
     if (!dateRange?.from) return true; // No start date, return all
@@ -100,7 +104,6 @@ export default function Dashboard() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Delivery Records');
     
-    // Add summary if a specific boy is selected
     if(selectedBoy !== 'All') {
         const totalDelivered = finalFilteredEntries.reduce((acc, e) => acc + e.delivered, 0);
         const totalRVP = finalFilteredEntries.reduce((acc, e) => acc + e.rvp, 0);
@@ -113,7 +116,7 @@ export default function Dashboard() {
         const totalPayout = ((totalDelivered + totalRVP) * DELIVERY_BOY_RATE) - totalCODShortage - totalAdvance;
 
         const summaryData = [
-            {}, // empty row for spacing
+            {}, 
             { 'Summary Metric': `Summary for ${selectedBoy}`, 'Value': ''},
             { 'Summary Metric': 'Total Delivered', 'Value': totalDelivered},
             { 'Summary Metric': 'Total RVP', 'Value': totalRVP},
@@ -129,6 +132,8 @@ export default function Dashboard() {
     const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
     saveAs(data, `delivery_records_${selectedBoy}_${new Date().toISOString().split('T')[0]}.xlsx`);
   }
+  
+  const isLoading = entriesLoading || advancesLoading;
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
@@ -197,10 +202,11 @@ export default function Dashboard() {
                 selectedBoy={selectedBoy}
                 onSelectBoy={setSelectedBoy}
                 onExport={handleExcelExport}
+                isLoading={isLoading}
             />
         </div>
         <div className="lg:col-span-3">
-            <EarningsChart entries={filteredEntriesByDate} advances={filteredAdvancesByDate} />
+            <EarningsChart entries={filteredEntriesByDate} advances={filteredAdvancesByDate} isLoading={isLoading} />
         </div>
       </div>
     </div>

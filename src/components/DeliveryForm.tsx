@@ -33,7 +33,7 @@ const formSchema = z.object({
 });
 
 type DeliveryFormProps = {
-  onAddEntry: (entry: Omit<DeliveryEntry, 'id'>) => void;
+  onAddEntry: (entry: Omit<DeliveryEntry, 'id' | 'date'> & {date: Date}) => void;
   deliveryBoys: string[];
 };
 

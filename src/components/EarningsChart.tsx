@@ -19,13 +19,15 @@ import {
   ChartLegendContent
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
+import { Skeleton } from './ui/skeleton';
 
 type EarningsChartProps = {
     entries: DeliveryEntry[];
     advances: AdvancePayment[];
+    isLoading: boolean;
 }
 
-export default function EarningsChart({ entries, advances }: EarningsChartProps) {
+export default function EarningsChart({ entries, advances, isLoading }: EarningsChartProps) {
   const profitRate = COMPANY_RATE - DELIVERY_BOY_RATE;
 
   const dataByBoy = [...entries, ...advances].reduce((acc, item) => {
@@ -84,7 +86,11 @@ export default function EarningsChart({ entries, advances }: EarningsChartProps)
         <CardDescription>Payout to delivery boys vs. your profit.</CardDescription>
       </CardHeader>
       <CardContent>
-        {chartData.length > 0 ? (
+        {isLoading ? (
+            <div className="flex h-[450px] w-full items-center justify-center">
+                 <Skeleton className="h-full w-full" />
+            </div>
+        ) : chartData.length > 0 ? (
           <ChartContainer config={chartConfig} className="min-h-[200px] w-full h-[400px]">
             <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{left: 10}}>
               <CartesianGrid horizontal={false} />
@@ -118,7 +124,7 @@ export default function EarningsChart({ entries, advances }: EarningsChartProps)
           </ChartContainer>
         ) : (
           <div className="flex h-[450px] w-full items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground">
-            Not enough data to display chart.
+            No data to display. Add an entry to see the chart.
           </div>
         )}
       </CardContent>

@@ -39,6 +39,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from './ui/skeleton';
 
 type DeliveryTableProps = {
   data: DeliveryEntry[];
@@ -48,11 +49,12 @@ type DeliveryTableProps = {
   selectedBoy: string;
   onSelectBoy: (name: string) => void;
   onExport: () => void;
+  isLoading: boolean;
 };
 
-type Transaction = (DeliveryEntry & { type: 'delivery' }) | (AdvancePayment & { type: 'advance' });
+type Transaction = (Omit<DeliveryEntry, 'date'> & { date: Date, type: 'delivery' }) | (Omit<AdvancePayment, 'date'> & { date: Date, type: 'advance' });
 
-export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryBoys, selectedBoy, onSelectBoy, onExport }: DeliveryTableProps) {
+export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryBoys, selectedBoy, onSelectBoy, onExport, isLoading }: DeliveryTableProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -65,8 +67,8 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
   const filteredAdvances = advances.filter(a => selectedBoy === 'All' || a.deliveryBoyName === selectedBoy);
 
   const allTransactions: Transaction[] = [
-    ...filteredData.map(d => ({ ...d, type: 'delivery' as const })),
-    ...filteredAdvances.map(a => ({ ...a, type: 'advance' as const }))
+    ...filteredData.map(d => ({ ...d, type: 'delivery' as const, date: new Date(d.date) })),
+    ...filteredAdvances.map(a => ({ ...a, type: 'advance' as const, date: new Date(a.date) }))
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   let runningBalance = 0;
@@ -127,10 +129,18 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactionsWithBalance.length === 0 ? (
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={selectedBoy === 'All' ? 8 : 7}>
+                    <Skeleton className="h-8 w-full" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : transactionsWithBalance.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
-                    No records found for the selected criteria.
+                    No records found. Add a new entry to get started.
                     </TableCell>
                 </TableRow>
             ) : transactionsWithBalance.map((transaction) => {

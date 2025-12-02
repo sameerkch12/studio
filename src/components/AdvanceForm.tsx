@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
+import { Timestamp } from "firebase/firestore";
 
 const formSchema = z.object({
   deliveryBoyName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -26,7 +27,7 @@ const formSchema = z.object({
 });
 
 type AdvanceFormProps = {
-  onAddAdvance: (advance: Omit<AdvancePayment, 'id'>) => void;
+  onAddAdvance: (advance: Omit<AdvancePayment, 'id' | 'date'> & { date: Date }) => void;
   deliveryBoys: string[];
 };
 
