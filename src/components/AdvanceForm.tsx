@@ -4,16 +4,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, IndianRupee } from "lucide-react";
+import { Calendar as CalendarIcon, IndianRupee, ChevronsUpDown } from "lucide-react";
 import type { AdvancePayment } from "@/lib/types";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import React from "react";
 
 const formSchema = z.object({
   deliveryBoyName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -30,6 +32,8 @@ type AdvanceFormProps = {
 
 export default function AdvanceForm({ onAddAdvance, deliveryBoys }: AdvanceFormProps) {
   const { toast } = useToast();
+  const [open, setOpen] = React.useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -59,14 +63,52 @@ export default function AdvanceForm({ onAddAdvance, deliveryBoys }: AdvanceFormP
           control={form.control}
           name="deliveryBoyName"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="flex flex-col">
               <FormLabel>Delivery Boy Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Select or type name" {...field} list="delivery-boys" />
-              </FormControl>
-              <datalist id="delivery-boys">
-                {deliveryBoys.map(name => <option key={name} value={name} />)}
-              </datalist>
+                <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>
+                        <FormControl>
+                        <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={open}
+                            className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                            )}
+                        >
+                            {field.value
+                            ? deliveryBoys.find(
+                                (boy) => boy === field.value
+                                )
+                            : "Select or type a name"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                        </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                        <CommandInput placeholder="Search or add new..." />
+                        <CommandList>
+                            <CommandEmpty>No delivery boy found.</CommandEmpty>
+                            <CommandGroup>
+                                {deliveryBoys.map((boy) => (
+                                <CommandItem
+                                    value={boy}
+                                    key={boy}
+                                    onSelect={(currentValue) => {
+                                        form.setValue("deliveryBoyName", currentValue === field.value ? "" : currentValue)
+                                        setOpen(false)
+                                    }}
+                                >
+                                    {boy}
+                                </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
               <FormMessage />
             </FormItem>
           )}

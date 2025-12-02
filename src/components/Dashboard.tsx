@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import type { DateRange } from "react-day-picker";
-import { subDays } from 'date-fns';
 import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
-import { PlusCircle, Wallet } from 'lucide-react';
+import { PlusCircle, Wallet, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
@@ -31,10 +30,7 @@ export default function Dashboard() {
   const [advances, setAdvances] = useState<AdvancePayment[]>(initialAdvances);
   const [isDeliverySheetOpen, setDeliverySheetOpen] = useState(false);
   const [isAdvanceSheetOpen, setAdvanceSheetOpen] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 29),
-    to: new Date(),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const addEntry = (entry: Omit<DeliveryEntry, 'id'>) => {
     const newEntry = { ...entry, id: crypto.randomUUID() };
@@ -54,13 +50,15 @@ export default function Dashboard() {
   
   const deliveryBoys = [...new Set([...entries.map(e => e.deliveryBoyName), ...advances.map(a => a.deliveryBoyName)])];
   
-  const filteredEntries = entries.filter(entry => 
-    dateRange?.from && dateRange?.to && entry.date >= dateRange.from && entry.date <= dateRange.to
-  );
+  const filteredEntries = entries.filter(entry => {
+    if (!dateRange?.from || !dateRange?.to) return true;
+    return entry.date >= dateRange.from && entry.date <= dateRange.to;
+  });
 
-  const filteredAdvances = advances.filter(adv => 
-    dateRange?.from && dateRange?.to && adv.date >= dateRange.from && adv.date <= dateRange.to
-  );
+  const filteredAdvances = advances.filter(adv => {
+    if (!dateRange?.from || !dateRange?.to) return true;
+    return adv.date >= dateRange.from && adv.date <= dateRange.to;
+  });
 
 
   return (
@@ -68,7 +66,15 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
         <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-          <DateRangePicker date={dateRange} onDateChange={setDateRange} className="w-full sm:w-auto" />
+          <div className="flex items-center gap-2">
+            <DateRangePicker date={dateRange} onDateChange={setDateRange} className="w-full sm:w-auto" />
+            {dateRange && (
+                <Button variant="ghost" size="icon" onClick={() => setDateRange(undefined)} className="h-9 w-9">
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Clear date filter</span>
+                </Button>
+            )}
+          </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <Sheet open={isAdvanceSheetOpen} onOpenChange={setAdvanceSheetOpen}>
               <SheetTrigger asChild>
