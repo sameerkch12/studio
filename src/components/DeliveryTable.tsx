@@ -107,8 +107,9 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
                 </TableRow>
             ) : data.map((entry) => {
               const codShortage = entry.expectedCod - entry.actualCodCollected;
-              const payout = (entry.delivered + entry.rvp) * DELIVERY_BOY_RATE - entry.advance - codShortage;
               const totalParcels = entry.delivered + entry.rvp;
+              const grossPayout = totalParcels * DELIVERY_BOY_RATE;
+              const payout = grossPayout - entry.advance - codShortage;
 
               return (
               <TableRow key={entry.id}>
@@ -152,12 +153,17 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
                     <div className="text-xs text-muted-foreground">of {formatCurrency(entry.expectedCod)}</div>
                   )}
                 </TableCell>
-                <TableCell className="text-right font-semibold text-primary">
-                    <div>{formatCurrency(payout)}</div>
+                <TableCell className="text-right">
+                    <div className="font-semibold text-primary">{formatCurrency(payout)}</div>
                     <div className="text-xs text-muted-foreground whitespace-nowrap">
-                        {entry.advance > 0 && `(Adv: ${formatCurrency(entry.advance)})`}
-                        {codShortage > 0 && ` (Short: ${formatCurrency(codShortage)})`}
+                        ({totalParcels} x ₹{DELIVERY_BOY_RATE} = {formatCurrency(grossPayout)})
                     </div>
+                     {(entry.advance > 0 || codShortage > 0) && (
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                            {entry.advance > 0 && ` - Adv ${formatCurrency(entry.advance)}`}
+                            {codShortage > 0 && ` - Short ${formatCurrency(codShortage)}`}
+                        </div>
+                     )}
                 </TableCell>
                 <TableCell>
                   <AlertDialog>
