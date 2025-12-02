@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from 'react';
+import type { DateRange } from "react-day-picker";
+import { subDays } from 'date-fns';
 import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
 import { PlusCircle, Wallet } from 'lucide-react';
 
@@ -11,6 +13,7 @@ import AdvanceForm from './AdvanceForm';
 import DeliveryTable from './DeliveryTable';
 import SummaryCards from './SummaryCards';
 import EarningsChart from './EarningsChart';
+import { DateRangePicker } from './DateRangePicker';
 
 const initialDeliveries: DeliveryEntry[] = [
   { id: '1', deliveryBoyName: 'Ramesh', date: new Date('2024-07-20'), delivered: 50, returned: 2, expectedCod: 15000, actualCodCollected: 15000, rvp: 3, advance: 500 },
@@ -28,6 +31,10 @@ export default function Dashboard() {
   const [advances, setAdvances] = useState<AdvancePayment[]>(initialAdvances);
   const [isDeliverySheetOpen, setDeliverySheetOpen] = useState(false);
   const [isAdvanceSheetOpen, setAdvanceSheetOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  });
 
   const addEntry = (entry: Omit<DeliveryEntry, 'id'>) => {
     const newEntry = { ...entry, id: crypto.randomUUID() };
@@ -46,59 +53,71 @@ export default function Dashboard() {
   };
   
   const deliveryBoys = [...new Set([...entries.map(e => e.deliveryBoyName), ...advances.map(a => a.deliveryBoyName)])];
+  
+  const filteredEntries = entries.filter(entry => 
+    dateRange?.from && dateRange?.to && entry.date >= dateRange.from && entry.date <= dateRange.to
+  );
+
+  const filteredAdvances = advances.filter(adv => 
+    dateRange?.from && dateRange?.to && adv.date >= dateRange.from && adv.date <= dateRange.to
+  );
+
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
-      <div className="flex justify-between items-center gap-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
-        <div className="flex gap-2">
-          <Sheet open={isAdvanceSheetOpen} onOpenChange={setAdvanceSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline">
-                <Wallet className="mr-2 h-4 w-4" /> Add Advance
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="sm:max-w-lg overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle>Add Advance Payment</SheetTitle>
-                <SheetDescription>
-                  Record an advance payment given to a delivery boy.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="py-4">
-                <AdvanceForm deliveryBoys={deliveryBoys} onAddAdvance={addAdvance} />
-              </div>
-            </SheetContent>
-          </Sheet>
-          <Sheet open={isDeliverySheetOpen} onOpenChange={setDeliverySheetOpen}>
-            <SheetTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Daily Entry
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="sm:max-w-lg overflow-y-auto">
-              <SheetHeader>
-                <SheetTitle>Add New Delivery Record</SheetTitle>
-                <SheetDescription>
-                  Fill in the details for a delivery boy's daily activity.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="py-4">
-                <DeliveryForm onAddEntry={addEntry} deliveryBoys={deliveryBoys} />
-              </div>
-            </SheetContent>
-          </Sheet>
+        <div className="flex flex-col-reverse sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+          <DateRangePicker date={dateRange} onDateChange={setDateRange} className="w-full sm:w-auto" />
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Sheet open={isAdvanceSheetOpen} onOpenChange={setAdvanceSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="w-1/2 sm:w-auto">
+                  <Wallet className="mr-2 h-4 w-4" /> Add Advance
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="sm:max-w-lg overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Add Advance Payment</SheetTitle>
+                  <SheetDescription>
+                    Record an advance payment given to a delivery boy.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="py-4">
+                  <AdvanceForm deliveryBoys={deliveryBoys} onAddAdvance={addAdvance} />
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Sheet open={isDeliverySheetOpen} onOpenChange={setDeliverySheetOpen}>
+              <SheetTrigger asChild>
+                <Button className="w-1/2 sm:w-auto">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Daily Entry
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="sm:max-w-lg overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Add New Delivery Record</SheetTitle>
+                  <SheetDescription>
+                    Fill in the details for a delivery boy's daily activity.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="py-4">
+                  <DeliveryForm onAddEntry={addEntry} deliveryBoys={deliveryBoys} />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
 
-      <SummaryCards entries={entries} advances={advances} />
+      <SummaryCards entries={filteredEntries} advances={filteredAdvances} />
 
       <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-7">
         <div className="lg:col-span-4">
-            <DeliveryTable data={entries} onDeleteEntry={deleteEntry} />
+            <DeliveryTable data={filteredEntries} onDeleteEntry={deleteEntry} />
         </div>
         <div className="lg:col-span-3">
-            <EarningsChart entries={entries} advances={advances} />
+            <EarningsChart entries={filteredEntries} advances={filteredAdvances} />
         </div>
       </div>
     </div>
