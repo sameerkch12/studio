@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2 } from 'lucide-react';
+import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2, AlertTriangle } from 'lucide-react';
 
 import type { DeliveryEntry } from '@/lib/types';
 import { DELIVERY_BOY_RATE } from '@/lib/types';
@@ -32,6 +32,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 type DeliveryTableProps = {
   data: DeliveryEntry[];
@@ -74,7 +80,11 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
                     No records found. Add a new entry to get started.
                     </TableCell>
                 </TableRow>
-            ) : data.map((entry) => (
+            ) : data.map((entry) => {
+              const codShortage = entry.expectedCod - entry.actualCodCollected;
+              const payout = entry.delivered * DELIVERY_BOY_RATE - entry.advance - codShortage;
+
+              return (
               <TableRow key={entry.id}>
                 <TableCell className="font-medium">
                   {format(entry.date, 'dd MMM yyyy')}
@@ -85,10 +95,31 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
                     <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"><Undo2 className="mr-1 h-3 w-3"/>{entry.returned}</Badge>
                     <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"><PackageOpen className="mr-1 h-3 w-3"/>{entry.rvp}</Badge>
                 </TableCell>
-                <TableCell className="text-right">{formatCurrency(entry.codCollected)}</TableCell>
+                <TableCell className="text-right">
+                  <div>{formatCurrency(entry.actualCodCollected)}</div>
+                   {codShortage > 0 ? (
+                     <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="text-xs text-destructive flex items-center justify-end gap-1">
+                                    <AlertTriangle className="h-3 w-3" /> ({formatCurrency(codShortage)} short)
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{entry.codShortageReason || 'Reason not specified'}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <div className="text-xs text-muted-foreground">of {formatCurrency(entry.expectedCod)}</div>
+                  )}
+                </TableCell>
                 <TableCell className="text-right font-semibold text-primary">
-                    <div>{formatCurrency(entry.delivered * DELIVERY_BOY_RATE - entry.advance)}</div>
-                    {entry.advance > 0 && <div className="text-xs text-muted-foreground">({formatCurrency(entry.delivered * DELIVERY_BOY_RATE)} - {formatCurrency(entry.advance)} adv)</div>}
+                    <div>{formatCurrency(payout)}</div>
+                    <div className="text-xs text-muted-foreground">
+                        {entry.advance > 0 && `(Adv: ${formatCurrency(entry.advance)})`}
+                        {codShortage > 0 && `(Short: ${formatCurrency(codShortage)})`}
+                    </div>
                 </TableCell>
                 <TableCell>
                   <AlertDialog>
@@ -125,7 +156,7 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
                   </AlertDialog>
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
       </CardContent>

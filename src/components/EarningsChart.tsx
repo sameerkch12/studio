@@ -1,7 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import type { DeliveryEntry } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
 import { DELIVERY_BOY_RATE, COMPANY_RATE } from '@/lib/types';
 
 import {
@@ -20,22 +20,37 @@ import {
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 
-export default function EarningsChart({ entries }: { entries: DeliveryEntry[] }) {
+type EarningsChartProps = {
+    entries: DeliveryEntry[];
+    advances: AdvancePayment[];
+}
+
+export default function EarningsChart({ entries, advances }: EarningsChartProps) {
   const profitRate = COMPANY_RATE - DELIVERY_BOY_RATE;
 
-  const dataByBoy = entries.reduce((acc, entry) => {
-    if (!acc[entry.deliveryBoyName]) {
-      acc[entry.deliveryBoyName] = { name: entry.deliveryBoyName, payout: 0, profit: 0, advance: 0 };
+  const dataByBoy = [...entries, ...advances].reduce((acc, item) => {
+    const name = item.deliveryBoyName;
+    if (!acc[name]) {
+      acc[name] = { name, payout: 0, profit: 0, advance: 0, codShortage: 0 };
     }
-    acc[entry.deliveryBoyName].payout += entry.delivered * DELIVERY_BOY_RATE;
-    acc[entry.deliveryBoyName].profit += entry.delivered * profitRate;
-    acc[entry.deliveryBoyName].advance += entry.advance;
+
+    if ('delivered' in item) { // It's a DeliveryEntry
+      const entry = item as DeliveryEntry;
+      acc[name].payout += entry.delivered * DELIVERY_BOY_RATE;
+      acc[name].profit += entry.delivered * profitRate;
+      acc[name].advance += entry.advance; // on-spot advance
+      acc[name].codShortage += entry.expectedCod - entry.actualCodCollected;
+    } else { // It's an AdvancePayment
+      const advance = item as AdvancePayment;
+      acc[name].advance += advance.amount;
+    }
+    
     return acc;
-  }, {} as Record<string, { name: string; payout: number; profit: number, advance: number }>);
+  }, {} as Record<string, { name: string; payout: number; profit: number, advance: number, codShortage: number }>);
 
   const chartData = Object.values(dataByBoy).map(boy => ({
       ...boy,
-      netPayout: boy.payout - boy.advance
+      netPayout: boy.payout - boy.advance - boy.codShortage,
   })).sort((a,b) => (b.payout + b.profit) - (a.payout + a.profit));
   
   const chartConfig = {

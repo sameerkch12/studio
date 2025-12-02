@@ -1,18 +1,27 @@
-import type { DeliveryEntry } from "@/lib/types";
+import type { DeliveryEntry, AdvancePayment } from "@/lib/types";
 import { DELIVERY_BOY_RATE, COMPANY_RATE } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IndianRupee, PackageCheck, TrendingUp, Wallet } from "lucide-react";
 
 type SummaryCardsProps = {
   entries: DeliveryEntry[];
+  advances: AdvancePayment[];
 };
 
-export default function SummaryCards({ entries }: SummaryCardsProps) {
+export default function SummaryCards({ entries, advances }: SummaryCardsProps) {
   const totalDelivered = entries.reduce((acc, entry) => acc + entry.delivered, 0);
-  const totalCodCollected = entries.reduce((acc, entry) => acc + entry.codCollected, 0);
-  const totalAdvance = entries.reduce((acc, entry) => acc + entry.advance, 0);
+  
+  const totalActualCod = entries.reduce((acc, entry) => acc + entry.actualCodCollected, 0);
+  
+  const totalOnSpotAdvance = entries.reduce((acc, entry) => acc + entry.advance, 0);
+  const totalSeparateAdvance = advances.reduce((acc, adv) => acc + adv.amount, 0);
+  const totalAdvance = totalOnSpotAdvance + totalSeparateAdvance;
+  
+  const totalCodShortage = entries.reduce((acc, entry) => acc + (entry.expectedCod - entry.actualCodCollected), 0);
+
   const totalGrossPayout = totalDelivered * DELIVERY_BOY_RATE;
-  const totalNetPayout = totalGrossPayout - totalAdvance;
+  const totalNetPayout = totalGrossPayout - totalAdvance - totalCodShortage;
+  
   const totalCompanyEarning = totalDelivered * COMPANY_RATE;
   const totalProfit = totalCompanyEarning - totalGrossPayout;
 
@@ -42,8 +51,10 @@ export default function SummaryCards({ entries }: SummaryCardsProps) {
           <IndianRupee className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalCodCollected)}</div>
-          <p className="text-xs text-muted-foreground">from customers</p>
+          <div className="text-2xl font-bold">{formatCurrency(totalActualCod)}</div>
+          <p className="text-xs text-muted-foreground">
+            {totalCodShortage > 0 ? `${formatCurrency(totalCodShortage)} short from customers` : 'from customers'}
+          </p>
         </CardContent>
       </Card>
       <Card>

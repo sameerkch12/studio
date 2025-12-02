@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,16 +23,19 @@ const formSchema = z.object({
   }),
   delivered: z.coerce.number().int().min(0, { message: "Cannot be negative." }),
   returned: z.coerce.number().int().min(0, { message: "Cannot be negative." }),
-  codCollected: z.coerce.number().min(0, { message: "Cannot be negative." }),
+  expectedCod: z.coerce.number().min(0, { message: "Cannot be negative." }),
+  actualCodCollected: z.coerce.number().min(0, { message: "Cannot be negative." }),
+  codShortageReason: z.string().optional(),
   rvp: z.coerce.number().int().min(0, { message: "Cannot be negative." }),
   advance: z.coerce.number().min(0, { message: "Cannot be negative." }),
 });
 
 type DeliveryFormProps = {
   onAddEntry: (entry: Omit<DeliveryEntry, 'id'>) => void;
+  deliveryBoys: string[];
 };
 
-export default function DeliveryForm({ onAddEntry }: DeliveryFormProps) {
+export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormProps) {
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,19 +44,38 @@ export default function DeliveryForm({ onAddEntry }: DeliveryFormProps) {
       date: new Date(),
       delivered: 0,
       returned: 0,
-      codCollected: 0,
+      expectedCod: 0,
+      actualCodCollected: 0,
+      codShortageReason: "",
       rvp: 0,
       advance: 0,
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (values.actualCodCollected > values.expectedCod) {
+        form.setError("actualCodCollected", {
+            type: "manual",
+            message: "Actual COD cannot be greater than Expected COD."
+        });
+        return;
+    }
     onAddEntry(values);
     toast({
       title: "Success!",
       description: "New delivery entry has been added.",
     });
-    form.reset();
+    form.reset({
+        ...form.getValues(),
+        deliveryBoyName: "",
+        delivered: 0,
+        returned: 0,
+        expectedCod: 0,
+        actualCodCollected: 0,
+        codShortageReason: "",
+        rvp: 0,
+        advance: 0,
+    });
   }
 
   return (
@@ -65,8 +88,11 @@ export default function DeliveryForm({ onAddEntry }: DeliveryFormProps) {
             <FormItem>
               <FormLabel>Delivery Boy Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Ramesh Kumar" {...field} />
+                <Input placeholder="e.g. Ramesh Kumar" {...field} list="delivery-boys" />
               </FormControl>
+               <datalist id="delivery-boys">
+                {deliveryBoys.map(name => <option key={name} value={name} />)}
+              </datalist>
               <FormMessage />
             </FormItem>
           )}
@@ -106,77 +132,116 @@ export default function DeliveryForm({ onAddEntry }: DeliveryFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="delivered"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Parcels Delivered</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="e.g. 50" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="returned"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Parcels Returned</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="e.g. 2" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="codCollected"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>COD Collected</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="number" placeholder="e.g. 15000" className="pl-8" {...field} />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="rvp"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>RVP Pickups</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="e.g. 3" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="advance"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Advance Payment</FormLabel>
-              <FormControl>
-                 <div className="relative">
-                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="number" placeholder="e.g. 500" className="pl-8" {...field} />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="delivered"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Parcels Delivered</FormLabel>
+                <FormControl>
+                    <Input type="number" placeholder="e.g. 50" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="returned"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Parcels Returned</FormLabel>
+                <FormControl>
+                    <Input type="number" placeholder="e.g. 2" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="expectedCod"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Expected COD</FormLabel>
+                <FormControl>
+                    <div className="relative">
+                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input type="number" placeholder="e.g. 15000" className="pl-8" {...field} />
+                    </div>
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="actualCodCollected"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Actual COD Collected</FormLabel>
+                <FormControl>
+                    <div className="relative">
+                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input type="number" placeholder="e.g. 14500" className="pl-8" {...field} />
+                    </div>
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
+
+        {form.watch('actualCodCollected') < form.watch('expectedCod') && (
+            <FormField
+                control={form.control}
+                name="codShortageReason"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Reason for COD Shortage</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="e.g. Customer paid less, parcel lost..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        )}
+        
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="rvp"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>RVP Pickups</FormLabel>
+                <FormControl>
+                    <Input type="number" placeholder="e.g. 3" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="advance"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>On-spot Advance</FormLabel>
+                <FormControl>
+                    <div className="relative">
+                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input type="number" placeholder="e.g. 500" className="pl-8" {...field} />
+                    </div>
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         <Button type="submit" className="w-full">Add Entry</Button>
       </form>
     </Form>

@@ -4,9 +4,18 @@ export type DeliveryEntry = {
   deliveryBoyName: string;
   delivered: number;
   returned: number;
-  codCollected: number;
+  expectedCod: number;
+  actualCodCollected: number;
+  codShortageReason?: string;
   rvp: number;
-  advance: number;
+  advance: number; // This remains for advances given on the same day as an entry
+};
+
+export type AdvancePayment = {
+  id: string;
+  date: Date;
+  deliveryBoyName: string;
+  amount: number;
 };
 
 export const DELIVERY_BOY_RATE = 14;
