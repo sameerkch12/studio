@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2, AlertTriangle } from 'lucide-react';
+import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2, AlertTriangle, FileDown } from 'lucide-react';
 
 import type { DeliveryEntry } from '@/lib/types';
 import { DELIVERY_BOY_RATE } from '@/lib/types';
@@ -46,9 +46,10 @@ type DeliveryTableProps = {
   deliveryBoys: string[];
   selectedBoy: string;
   onSelectBoy: (name: string) => void;
+  onExport: () => void;
 };
 
-export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selectedBoy, onSelectBoy }: DeliveryTableProps) {
+export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selectedBoy, onSelectBoy, onExport }: DeliveryTableProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -59,23 +60,27 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
 
   return (
     <Card>
-      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <CardTitle>Daily Records</CardTitle>
           <CardDescription>A list of all delivery records.</CardDescription>
         </div>
-        <div className="mt-4 md:mt-0 w-full md:w-auto md:min-w-[200px]">
-          <Select value={selectedBoy} onValueChange={onSelectBoy}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select Delivery Boy" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Delivery Boys</SelectItem>
-              {deliveryBoys.map(boy => (
-                <SelectItem key={boy} value={boy}>{boy}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
+            <Select value={selectedBoy} onValueChange={onSelectBoy}>
+                <SelectTrigger className="w-full md:min-w-[200px]">
+                <SelectValue placeholder="Select Delivery Boy" />
+                </SelectTrigger>
+                <SelectContent>
+                <SelectItem value="All">All Delivery Boys</SelectItem>
+                {deliveryBoys.map(boy => (
+                    <SelectItem key={boy} value={boy}>{boy}</SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+            <Button onClick={onExport} variant="outline" className="w-full md:w-auto">
+                <FileDown className="mr-2 h-4 w-4" />
+                Download Excel
+            </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -85,6 +90,7 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
               <TableHead>Date</TableHead>
               <TableHead>Delivery Boy</TableHead>
               <TableHead className="text-center">Stats</TableHead>
+              <TableHead className="text-center">Total</TableHead>
               <TableHead className="text-right">COD</TableHead>
               <TableHead className="text-right">Payout</TableHead>
               <TableHead>
@@ -95,20 +101,21 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
           <TableBody>
             {data.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                     No records found for the selected criteria.
                     </TableCell>
                 </TableRow>
             ) : data.map((entry) => {
               const codShortage = entry.expectedCod - entry.actualCodCollected;
               const payout = entry.delivered * DELIVERY_BOY_RATE - entry.advance - codShortage;
+              const totalParcels = entry.delivered + entry.rvp;
 
               return (
               <TableRow key={entry.id}>
-                <TableCell className="font-medium">
+                <TableCell className="font-medium whitespace-nowrap">
                   {format(entry.date, 'dd MMM yyyy')}
                 </TableCell>
-                <TableCell>{entry.deliveryBoyName}</TableCell>
+                <TableCell className="whitespace-nowrap">{entry.deliveryBoyName}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
                     <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100/80">
@@ -125,6 +132,7 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
                     </Badge>
                   </div>
                 </TableCell>
+                <TableCell className="text-center font-bold">{totalParcels}</TableCell>
                 <TableCell className="text-right">
                   <div>{formatCurrency(entry.actualCodCollected)}</div>
                    {codShortage > 0 ? (
@@ -193,3 +201,5 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
     </Card>
   );
 }
+
+    

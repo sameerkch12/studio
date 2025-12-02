@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import type { DateRange } from "react-day-picker";
 import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
-import { PlusCircle, Wallet, X } from 'lucide-react';
+import { PlusCircle, Wallet, X, FileDown } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
@@ -13,7 +15,7 @@ import DeliveryTable from './DeliveryTable';
 import SummaryCards from './SummaryCards';
 import EarningsChart from './EarningsChart';
 import { DateRangePicker } from './DateRangePicker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DELIVERY_BOY_RATE } from '@/lib/types';
 
 
 const initialDeliveries: DeliveryEntry[] = [
@@ -73,6 +75,60 @@ export default function Dashboard() {
       if (selectedBoy === 'All') return true;
       return entry.deliveryBoyName === selectedBoy;
   });
+
+  const handleExcelExport = () => {
+    const dataToExport = finalFilteredEntries.map(entry => {
+        const codShortage = entry.expectedCod - entry.actualCodCollected;
+        const payout = entry.delivered * DELIVERY_BOY_RATE - entry.advance - codShortage;
+        return {
+            'Date': new Date(entry.date).toLocaleDateString('en-GB'),
+            'Delivery Boy': entry.deliveryBoyName,
+            'Delivered': entry.delivered,
+            'Returned': entry.returned,
+            'RVP': entry.rvp,
+            'Total Parcels': entry.delivered + entry.rvp,
+            'Expected COD': entry.expectedCod,
+            'Actual COD': entry.actualCodCollected,
+            'COD Shortage': codShortage > 0 ? codShortage : 0,
+            'Shortage Reason': entry.codShortageReason || '',
+            'On-spot Advance': entry.advance,
+            'Final Payout': payout
+        };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Delivery Records');
+    
+    // Add summary if a specific boy is selected
+    if(selectedBoy !== 'All') {
+        const totalDelivered = finalFilteredEntries.reduce((acc, e) => acc + e.delivered, 0);
+        const totalRVP = finalFilteredEntries.reduce((acc, e) => acc + e.rvp, 0);
+        const totalCODShortage = finalFilteredEntries.reduce((acc, e) => acc + (e.expectedCod - e.actualCodCollected), 0);
+        const totalOnSpotAdvance = finalFilteredEntries.reduce((acc, e) => acc + e.advance, 0);
+        const totalSeparateAdvance = filteredAdvancesByDate
+            .filter(a => a.deliveryBoyName === selectedBoy)
+            .reduce((acc, a) => acc + a.amount, 0);
+        const totalAdvance = totalOnSpotAdvance + totalSeparateAdvance;
+        const totalPayout = (totalDelivered * DELIVERY_BOY_RATE) - totalCODShortage - totalAdvance;
+
+        const summaryData = [
+            {}, // empty row for spacing
+            { 'Summary Metric': `Summary for ${selectedBoy}`, 'Value': ''},
+            { 'Summary Metric': 'Total Delivered', 'Value': totalDelivered},
+            { 'Summary Metric': 'Total RVP', 'Value': totalRVP},
+            { 'Summary Metric': 'Total Parcels (Delivered + RVP)', 'Value': totalDelivered + totalRVP},
+            { 'Summary Metric': 'Total COD Shortage', 'Value': totalCODShortage},
+            { 'Summary Metric': 'Total Advance Paid', 'Value': totalAdvance },
+            { 'Summary Metric': 'Final Net Payout', 'Value': totalPayout }
+        ];
+        XLSX.utils.sheet_add_json(worksheet, summaryData, { origin: -1, skipHeader: true });
+    }
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+    saveAs(data, `delivery_records_${selectedBoy}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
@@ -139,6 +195,7 @@ export default function Dashboard() {
                 deliveryBoys={deliveryBoys}
                 selectedBoy={selectedBoy}
                 onSelectBoy={setSelectedBoy}
+                onExport={handleExcelExport}
             />
         </div>
         <div className="lg:col-span-3">
@@ -148,3 +205,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    
