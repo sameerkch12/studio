@@ -1,7 +1,7 @@
 import type { DeliveryEntry, AdvancePayment, CompanyCodPayment } from "@/lib/types";
 import { DELIVERY_BOY_RATE, COMPANY_RATE } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IndianRupee, PackageCheck, TrendingUp, Wallet, Building } from "lucide-react";
+import { IndianRupee, PackageCheck, TrendingUp, Wallet, Building, Coins } from "lucide-react";
 
 type SummaryCardsProps = {
   entries: DeliveryEntry[];
@@ -16,6 +16,7 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
   
   const totalActualCod = entries.reduce((acc, entry) => acc + entry.actualCodCollected, 0);
   const totalPaidToCompany = companyCodPayments.reduce((acc, payment) => acc + payment.amount, 0);
+  const codInHand = totalActualCod - totalPaidToCompany;
   
   const totalOnSpotAdvance = entries.reduce((acc, entry) => acc + entry.advance, 0);
   const totalSeparateAdvance = advances.reduce((acc, adv) => acc + adv.amount, 0);
@@ -49,13 +50,13 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">COD Collected</CardTitle>
-          <IndianRupee className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">COD in Hand</CardTitle>
+          <Coins className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalActualCod)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(codInHand)}</div>
           <p className="text-xs text-muted-foreground">
-            {totalCodShortage > 0 ? `${formatCurrency(totalCodShortage)} short` : 'from customers'}
+            {formatCurrency(totalActualCod)} collected
           </p>
         </CardContent>
       </Card>
