@@ -147,7 +147,6 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
                 const codShortage = entry.expectedCod - entry.actualCodCollected;
                 const totalParcels = entry.delivered + entry.rvp;
                 const grossPayout = totalParcels * DELIVERY_BOY_RATE;
-                const payout = grossPayout - entry.advance - codShortage;
 
                 return (
                 <TableRow key={entry.id}>
@@ -192,9 +191,9 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                      <div className="font-semibold text-primary">{formatCurrency(payout)}</div>
+                      <div className="font-semibold text-primary">{formatCurrency(transaction.payout)}</div>
                       <div className="text-xs text-muted-foreground whitespace-nowrap">
-                          ({totalParcels} x {formatCurrency(DELIVERY_BOY_RATE)} = {formatCurrency(grossPayout)})
+                          ({totalParcels} x {DELIVERY_BOY_RATE} = {formatCurrency(grossPayout)})
                       </div>
                       {(entry.advance > 0 || codShortage > 0) && (
                           <div className="text-xs text-muted-foreground whitespace-nowrap">
