@@ -186,7 +186,7 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
                   <TableCell className="text-right">
                       <div className="font-semibold text-primary">{formatCurrency(payout)}</div>
                       <div className="text-xs text-muted-foreground whitespace-nowrap">
-                          ({totalParcels} x ₹{DELIVERY_BOY_RATE} = {formatCurrency(grossPayout)})
+                          ({totalParcels} x {formatCurrency(DELIVERY_BOY_RATE)} = {formatCurrency(grossPayout)})
                       </div>
                       {(entry.advance > 0 || codShortage > 0) && (
                           <div className="text-xs text-muted-foreground whitespace-nowrap">
