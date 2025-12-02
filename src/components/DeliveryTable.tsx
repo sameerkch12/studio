@@ -90,10 +90,21 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
                   {format(entry.date, 'dd MMM yyyy')}
                 </TableCell>
                 <TableCell>{entry.deliveryBoyName}</TableCell>
-                <TableCell className="text-center space-x-2">
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"><PackageCheck className="mr-1 h-3 w-3"/>{entry.delivered}</Badge>
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"><Undo2 className="mr-1 h-3 w-3"/>{entry.returned}</Badge>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"><PackageOpen className="mr-1 h-3 w-3"/>{entry.rvp}</Badge>
+                <TableCell>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      <PackageCheck className="h-3 w-3"/>
+                      <span>{entry.delivered} <span className="hidden sm:inline">Delivered</span></span>
+                    </Badge>
+                    <Badge variant="secondary" className="flex items-center gap-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                      <Undo2 className="h-3 w-3"/>
+                      <span>{entry.returned} <span className="hidden sm:inline">Returned</span></span>
+                    </Badge>
+                    <Badge variant="secondary" className="flex items-center gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      <PackageOpen className="h-3 w-3"/>
+                      <span>{entry.rvp} <span className="hidden sm:inline">RVP</span></span>
+                    </Badge>
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <div>{formatCurrency(entry.actualCodCollected)}</div>
