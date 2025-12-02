@@ -190,7 +190,8 @@ export default function Dashboard() {
       <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-7">
         <div className="lg:col-span-4">
             <DeliveryTable 
-                data={finalFilteredEntries} 
+                data={finalFilteredEntries}
+                advances={filteredAdvancesByDate}
                 onDeleteEntry={deleteEntry}
                 deliveryBoys={deliveryBoys}
                 selectedBoy={selectedBoy}

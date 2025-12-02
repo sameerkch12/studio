@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2, AlertTriangle, FileDown } from 'lucide-react';
 
-import type { DeliveryEntry } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
 import { DELIVERY_BOY_RATE } from '@/lib/types';
 import {
   Table,
@@ -42,6 +42,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 type DeliveryTableProps = {
   data: DeliveryEntry[];
+  advances: AdvancePayment[];
   onDeleteEntry: (id: string) => void;
   deliveryBoys: string[];
   selectedBoy: string;
@@ -49,7 +50,7 @@ type DeliveryTableProps = {
   onExport: () => void;
 };
 
-export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selectedBoy, onSelectBoy, onExport }: DeliveryTableProps) {
+export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryBoys, selectedBoy, onSelectBoy, onExport }: DeliveryTableProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -57,6 +58,30 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
       minimumFractionDigits: 0,
     }).format(amount);
   };
+  
+  const allTransactions = [
+    ...data.map(d => ({ ...d, type: 'delivery' })),
+    ...advances.filter(a => selectedBoy === 'All' || a.deliveryBoyName === selectedBoy).map(a => ({ ...a, type: 'advance' }))
+  ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  let runningBalance = 0;
+  const transactionsWithBalance = allTransactions.map(transaction => {
+      let payout = 0;
+      if (transaction.type === 'delivery') {
+          const entry = transaction as DeliveryEntry;
+          const codShortage = entry.expectedCod - entry.actualCodCollected;
+          payout = (entry.delivered + entry.rvp) * DELIVERY_BOY_RATE - entry.advance - codShortage;
+          runningBalance += payout;
+      } else {
+          const adv = transaction as AdvancePayment;
+          payout = -adv.amount;
+          runningBalance += payout;
+      }
+      return { ...transaction, payout, balance: runningBalance };
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  const deliveryEntriesWithBalance = transactionsWithBalance.filter(t => t.type === 'delivery') as (DeliveryEntry & { payout: number; balance: number })[];
+
 
   return (
     <Card>
@@ -88,11 +113,12 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
-              <TableHead>Delivery Boy</TableHead>
+              {selectedBoy === 'All' && <TableHead>Delivery Boy</TableHead>}
               <TableHead className="text-center">Stats</TableHead>
               <TableHead className="text-center">Total</TableHead>
               <TableHead className="text-right">COD</TableHead>
               <TableHead className="text-right">Payout</TableHead>
+              <TableHead className="text-right">Balance</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -101,11 +127,11 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
           <TableBody>
             {data.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={8} className="h-24 text-center">
                     No records found for the selected criteria.
                     </TableCell>
                 </TableRow>
-            ) : data.map((entry) => {
+            ) : deliveryEntriesWithBalance.map((entry) => {
               const codShortage = entry.expectedCod - entry.actualCodCollected;
               const totalParcels = entry.delivered + entry.rvp;
               const grossPayout = totalParcels * DELIVERY_BOY_RATE;
@@ -114,9 +140,9 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
               return (
               <TableRow key={entry.id}>
                 <TableCell className="font-medium whitespace-nowrap">
-                  {format(entry.date, 'dd MMM yyyy')}
+                  {format(new Date(entry.date), 'dd MMM yyyy')}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">{entry.deliveryBoyName}</TableCell>
+                {selectedBoy === 'All' && <TableCell className="whitespace-nowrap">{entry.deliveryBoyName}</TableCell>}
                 <TableCell>
                   <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
                     <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100/80">
@@ -164,6 +190,9 @@ export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selec
                             {codShortage > 0 && ` - Short ${formatCurrency(codShortage)}`}
                         </div>
                      )}
+                </TableCell>
+                 <TableCell className="text-right font-bold">
+                  {formatCurrency(entry.balance)}
                 </TableCell>
                 <TableCell>
                   <AlertDialog>
