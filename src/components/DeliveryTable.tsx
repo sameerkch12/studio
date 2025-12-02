@@ -38,13 +38,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type DeliveryTableProps = {
   data: DeliveryEntry[];
   onDeleteEntry: (id: string) => void;
+  deliveryBoys: string[];
+  selectedBoy: string;
+  onSelectBoy: (name: string) => void;
 };
 
-export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProps) {
+export default function DeliveryTable({ data, onDeleteEntry, deliveryBoys, selectedBoy, onSelectBoy }: DeliveryTableProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -55,9 +59,24 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Daily Records</CardTitle>
-        <CardDescription>A list of all delivery records.</CardDescription>
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+          <CardTitle>Daily Records</CardTitle>
+          <CardDescription>A list of all delivery records.</CardDescription>
+        </div>
+        <div className="mt-4 md:mt-0 w-full md:w-auto md:min-w-[200px]">
+          <Select value={selectedBoy} onValueChange={onSelectBoy}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select Delivery Boy" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All Delivery Boys</SelectItem>
+              {deliveryBoys.map(boy => (
+                <SelectItem key={boy} value={boy}>{boy}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -77,7 +96,7 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
             {data.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
-                    No records found. Add a new entry to get started.
+                    No records found for the selected criteria.
                     </TableCell>
                 </TableRow>
             ) : data.map((entry) => {
@@ -91,16 +110,16 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
                 </TableCell>
                 <TableCell>{entry.deliveryBoyName}</TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+                    <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100/80">
                       <PackageCheck className="h-3 w-3"/>
                       <span>{entry.delivered} <span className="hidden sm:inline">Delivered</span></span>
                     </Badge>
-                    <Badge variant="secondary" className="flex items-center gap-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                    <Badge variant="secondary" className="flex items-center gap-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 hover:bg-yellow-100/80">
                       <Undo2 className="h-3 w-3"/>
                       <span>{entry.returned} <span className="hidden sm:inline">Returned</span></span>
                     </Badge>
-                    <Badge variant="secondary" className="flex items-center gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    <Badge variant="secondary" className="flex items-center gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-100/80">
                       <PackageOpen className="h-3 w-3"/>
                       <span>{entry.rvp} <span className="hidden sm:inline">RVP</span></span>
                     </Badge>
@@ -112,7 +131,7 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
                      <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <div className="text-xs text-destructive flex items-center justify-end gap-1">
+                                <div className="text-xs text-destructive flex items-center justify-end gap-1 cursor-help">
                                     <AlertTriangle className="h-3 w-3" /> ({formatCurrency(codShortage)} short)
                                 </div>
                             </TooltipTrigger>
@@ -127,9 +146,9 @@ export default function DeliveryTable({ data, onDeleteEntry }: DeliveryTableProp
                 </TableCell>
                 <TableCell className="text-right font-semibold text-primary">
                     <div>{formatCurrency(payout)}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-muted-foreground whitespace-nowrap">
                         {entry.advance > 0 && `(Adv: ${formatCurrency(entry.advance)})`}
-                        {codShortage > 0 && `(Short: ${formatCurrency(codShortage)})`}
+                        {codShortage > 0 && ` (Short: ${formatCurrency(codShortage)})`}
                     </div>
                 </TableCell>
                 <TableCell>

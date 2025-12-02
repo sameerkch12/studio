@@ -13,6 +13,8 @@ import DeliveryTable from './DeliveryTable';
 import SummaryCards from './SummaryCards';
 import EarningsChart from './EarningsChart';
 import { DateRangePicker } from './DateRangePicker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 
 const initialDeliveries: DeliveryEntry[] = [
   { id: '1', deliveryBoyName: 'Ramesh', date: new Date('2024-07-20'), delivered: 50, returned: 2, expectedCod: 15000, actualCodCollected: 15000, rvp: 3, advance: 500 },
@@ -31,6 +33,7 @@ export default function Dashboard() {
   const [isDeliverySheetOpen, setDeliverySheetOpen] = useState(false);
   const [isAdvanceSheetOpen, setAdvanceSheetOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [selectedBoy, setSelectedBoy] = useState('All');
 
   const addEntry = (entry: Omit<DeliveryEntry, 'id'>) => {
     const newEntry = { ...entry, id: crypto.randomUUID() };
@@ -50,16 +53,26 @@ export default function Dashboard() {
   
   const deliveryBoys = [...new Set([...entries.map(e => e.deliveryBoyName), ...advances.map(a => a.deliveryBoyName)])];
   
-  const filteredEntries = entries.filter(entry => {
-    if (!dateRange?.from || !dateRange?.to) return true;
-    return entry.date >= dateRange.from && entry.date <= dateRange.to;
+  const filteredEntriesByDate = entries.filter(entry => {
+    if (!dateRange?.from) return true; // No start date, return all
+    const toDate = dateRange.to ? new Date(dateRange.to) : new Date(dateRange.from);
+    // Set time to end of the day for the 'to' date
+    toDate.setHours(23, 59, 59, 999);
+    return entry.date >= dateRange.from && entry.date <= toDate;
   });
 
-  const filteredAdvances = advances.filter(adv => {
-    if (!dateRange?.from || !dateRange?.to) return true;
-    return adv.date >= dateRange.from && adv.date <= dateRange.to;
+  const filteredAdvancesByDate = advances.filter(adv => {
+    if (!dateRange?.from) return true; // No start date, return all
+    const toDate = dateRange.to ? new Date(dateRange.to) : new Date(dateRange.from);
+    // Set time to end of the day for the 'to' date
+    toDate.setHours(23, 59, 59, 999);
+    return adv.date >= dateRange.from && adv.date <= toDate;
   });
 
+  const finalFilteredEntries = filteredEntriesByDate.filter(entry => {
+      if (selectedBoy === 'All') return true;
+      return entry.deliveryBoyName === selectedBoy;
+  });
 
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
@@ -116,14 +129,20 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <SummaryCards entries={filteredEntries} advances={filteredAdvances} />
+      <SummaryCards entries={filteredEntriesByDate} advances={filteredAdvancesByDate} />
 
       <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-7">
         <div className="lg:col-span-4">
-            <DeliveryTable data={filteredEntries} onDeleteEntry={deleteEntry} />
+            <DeliveryTable 
+                data={finalFilteredEntries} 
+                onDeleteEntry={deleteEntry}
+                deliveryBoys={deliveryBoys}
+                selectedBoy={selectedBoy}
+                onSelectBoy={setSelectedBoy}
+            />
         </div>
         <div className="lg:col-span-3">
-            <EarningsChart entries={filteredEntries} advances={filteredAdvances} />
+            <EarningsChart entries={filteredEntriesByDate} advances={filteredAdvancesByDate} />
         </div>
       </div>
     </div>
