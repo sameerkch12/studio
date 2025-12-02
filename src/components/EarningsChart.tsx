@@ -72,11 +72,10 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
   } satisfies ChartConfig;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    const formatted = new Intl.NumberFormat('en-IN', {
       notation: 'compact'
     }).format(amount);
+    return `Rs ${formatted}`;
   };
   
   return (

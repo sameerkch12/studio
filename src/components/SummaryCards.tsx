@@ -28,11 +28,9 @@ export default function SummaryCards({ entries, advances }: SummaryCardsProps) {
   const totalProfit = totalCompanyEarning - totalGrossPayout;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return `Rs ${new Intl.NumberFormat('en-IN', {
       minimumFractionDigits: 0,
-    }).format(amount);
+    }).format(amount)}`;
   };
   
   return (

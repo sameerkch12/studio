@@ -214,7 +214,7 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
                 <FormLabel>Expected COD</FormLabel>
                 <FormControl>
                     <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Rs</span>
                     <Input type="number" placeholder="e.g. 15000" className="pl-8" {...field} />
                     </div>
                 </FormControl>
@@ -230,7 +230,7 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
                 <FormLabel>Actual COD Collected</FormLabel>
                 <FormControl>
                     <div className="relative">
-                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Rs</span>
                     <Input type="number" placeholder="e.g. 14500" className="pl-8" {...field} />
                     </div>
                 </FormControl>
@@ -278,7 +278,7 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
                 <FormLabel>On-spot Advance</FormLabel>
                 <FormControl>
                     <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Rs</span>
                     <Input type="number" placeholder="e.g. 500" className="pl-8" {...field} />
                     </div>
                 </FormControl>

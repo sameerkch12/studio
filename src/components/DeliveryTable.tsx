@@ -56,11 +56,9 @@ type Transaction = (Omit<DeliveryEntry, 'date'> & { date: Date, type: 'delivery'
 
 export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryBoys, selectedBoy, onSelectBoy, onExport, isLoading }: DeliveryTableProps) {
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return `Rs ${new Intl.NumberFormat('en-IN', {
       minimumFractionDigits: 0,
-    }).format(amount);
+    }).format(amount)}`;
   };
   
   const filteredData = data.filter(d => selectedBoy === 'All' || d.deliveryBoyName === selectedBoy);
