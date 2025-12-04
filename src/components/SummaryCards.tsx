@@ -33,7 +33,8 @@ const calculateMetrics = (entries: DeliveryEntry[], advances: AdvancePayment[], 
     
     const profitBhilai3 = totalWorkBhilai3 * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
     const profitCharoda = totalWorkCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
-    const totalProfit = profitBhilai3 + profitCharoda; // Profit only from delivered parcels
+    const profitRVP = totalRVP * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE); // Assume RVP profit is same as Bhilai-3
+    const totalProfit = profitBhilai3 + profitCharoda + profitRVP;
 
     return { totalWork, codInHand, totalPaidToCompany, totalNetPayout, totalProfit, totalWorkBhilai3, totalWorkCharoda, totalActualCod, totalAdvance, totalRVP };
 }
