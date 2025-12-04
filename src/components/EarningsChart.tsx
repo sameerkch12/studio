@@ -1,8 +1,8 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
-import { DELIVERY_BOY_RATE, COMPANY_RATE } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment, Pincode } from '@/lib/types';
+import { DELIVERY_BOY_RATE, COMPANY_RATES } from '@/lib/types';
 
 import {
   Card,
@@ -28,8 +28,7 @@ type EarningsChartProps = {
 }
 
 export default function EarningsChart({ entries, advances, isLoading }: EarningsChartProps) {
-  const profitRate = COMPANY_RATE - DELIVERY_BOY_RATE;
-
+  
   const dataByBoy = [...entries, ...advances].reduce((acc, item) => {
     const name = item.deliveryBoyName;
     if (!acc[name]) {
@@ -39,6 +38,9 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
     if ('delivered' in item) { // It's a DeliveryEntry
       const entry = item as DeliveryEntry;
       const workDone = entry.delivered + entry.rvp;
+      const companyRate = COMPANY_RATES[entry.pincode as Pincode] || 0;
+      const profitRate = companyRate - DELIVERY_BOY_RATE;
+
       acc[name].payout += workDone * DELIVERY_BOY_RATE;
       acc[name].profit += workDone * profitRate;
       acc[name].advance += entry.advance; // on-spot advance

@@ -1,8 +1,8 @@
 import { format } from 'date-fns';
-import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2, AlertTriangle, FileDown, Wallet } from 'lucide-react';
+import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2, AlertTriangle, FileDown, Wallet, MapPin } from 'lucide-react';
 
-import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
-import { DELIVERY_BOY_RATE } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment, Pincode } from '@/lib/types';
+import { DELIVERY_BOY_RATE, COMPANY_RATES } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -111,11 +111,12 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto">
-        <Table className="min-w-[800px] md:min-w-full">
+        <Table className="min-w-[900px] md:min-w-full">
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
               {selectedBoy === 'All' && <TableHead>Delivery Boy</TableHead>}
+              <TableHead>Pincode</TableHead>
               <TableHead className="text-center">Stats</TableHead>
               <TableHead className="text-center">Total</TableHead>
               <TableHead className="text-right">COD</TableHead>
@@ -130,14 +131,14 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={selectedBoy === 'All' ? 8 : 7}>
+                  <TableCell colSpan={selectedBoy === 'All' ? 9 : 8}>
                     <Skeleton className="h-8 w-full" />
                   </TableCell>
                 </TableRow>
               ))
             ) : transactionsWithBalance.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
+                    <TableCell colSpan={9} className="h-24 text-center">
                     No records found. Add a new entry to get started.
                     </TableCell>
                 </TableRow>
@@ -154,6 +155,12 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
                     {format(new Date(entry.date), 'dd MMM yyyy')}
                   </TableCell>
                   {selectedBoy === 'All' && <TableCell className="whitespace-nowrap">{entry.deliveryBoyName}</TableCell>}
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>{entry.pincode}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
                       <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100/80">
@@ -249,7 +256,7 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
                             {format(new Date(advance.date), 'dd MMM yyyy')}
                         </TableCell>
                         {selectedBoy === 'All' && <TableCell className="whitespace-nowrap">{advance.deliveryBoyName}</TableCell>}
-                        <TableCell colSpan={3} className="text-center text-sm text-muted-foreground italic">
+                        <TableCell colSpan={4} className="text-center text-sm text-muted-foreground italic">
                             <div className="flex items-center justify-center gap-2">
                                 <Wallet className="h-4 w-4"/>
                                 <span>Separate Advance Paid</span>

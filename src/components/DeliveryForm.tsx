@@ -6,14 +6,16 @@ import * as z from "zod";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, ChevronsUpDown } from "lucide-react";
 import type { DeliveryEntry } from "@/lib/types";
+import { Pincodes } from "@/lib/types";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
@@ -22,6 +24,9 @@ const formSchema = z.object({
   deliveryBoyName: z.string({ required_error: "Please select a delivery boy." }).min(1, { message: "Please select a delivery boy." }),
   date: z.date({
     required_error: "A date is required.",
+  }),
+  pincode: z.enum([Pincodes.BHILAI_3, Pincodes.CHARODA], {
+    required_error: "You need to select a pincode.",
   }),
   delivered: z.coerce.number().int().min(0, { message: "Cannot be negative." }),
   returned: z.coerce.number().int().min(0, { message: "Cannot be negative." }),
@@ -47,6 +52,7 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
     defaultValues: {
       deliveryBoyName: "",
       date: new Date(),
+      pincode: Pincodes.BHILAI_3,
       delivered: 0,
       returned: 0,
       expectedCod: 0,
@@ -177,6 +183,42 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="pincode"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel>Select Pincode</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex space-x-4"
+                >
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value={Pincodes.BHILAI_3} />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Bhilai-3 ({Pincodes.BHILAI_3})
+                    </FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value={Pincodes.CHARODA} />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      Charoda ({Pincodes.CHARODA})
+                    </FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <div className="grid grid-cols-2 gap-4">
             <FormField
             control={form.control}

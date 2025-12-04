@@ -32,6 +32,11 @@
           "description": "Date of the delivery record.",
           "format": "date-time"
         },
+        "pincode": {
+          "type": "string",
+          "description": "The pincode where the delivery took place.",
+          "enum": ["490021", "490025"]
+        },
         "delivered": {
           "type": "number",
           "description": "Number of parcels delivered."
@@ -64,6 +69,7 @@
       "required": [
         "deliveryBoyName",
         "date",
+        "pincode",
         "delivered",
         "returned",
         "expectedCod",

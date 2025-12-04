@@ -9,7 +9,7 @@ import { collection, doc, Timestamp } from 'firebase/firestore';
 
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
 import type { DeliveryEntry, AdvancePayment, DeliveryBoy, CompanyCodPayment } from '@/lib/types';
-import { DELIVERY_BOY_RATE } from '@/lib/types';
+import { DELIVERY_BOY_RATE, COMPANY_RATES } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
@@ -115,6 +115,7 @@ export default function Dashboard() {
         return {
             'Date': new Date(entry.date).toLocaleDateString('en-GB'),
             'Delivery Boy': entry.deliveryBoyName,
+            'Pincode': entry.pincode,
             'Delivered': entry.delivered,
             'Returned': entry.returned,
             'RVP': entry.rvp,

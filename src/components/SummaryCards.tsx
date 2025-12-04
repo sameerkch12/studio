@@ -1,5 +1,5 @@
-import type { DeliveryEntry, AdvancePayment, CompanyCodPayment } from "@/lib/types";
-import { DELIVERY_BOY_RATE, COMPANY_RATE } from "@/lib/types";
+import type { DeliveryEntry, AdvancePayment, CompanyCodPayment, Pincode } from "@/lib/types";
+import { DELIVERY_BOY_RATE, COMPANY_RATES } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IndianRupee, PackageCheck, TrendingUp, Wallet, Building, Coins } from "lucide-react";
 
@@ -27,7 +27,12 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
   const totalGrossPayout = totalWork * DELIVERY_BOY_RATE;
   const totalNetPayout = totalGrossPayout - totalAdvance - totalCodShortage;
   
-  const totalCompanyEarning = totalWork * COMPANY_RATE;
+  const totalCompanyEarning = entries.reduce((acc, entry) => {
+      const workDone = entry.delivered + entry.rvp;
+      const companyRate = COMPANY_RATES[entry.pincode as Pincode] || 0;
+      return acc + (workDone * companyRate);
+  }, 0);
+
   const totalProfit = totalCompanyEarning - totalGrossPayout;
 
   const formatCurrency = (amount: number) => {
