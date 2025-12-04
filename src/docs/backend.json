@@ -123,6 +123,27 @@
           }
         },
         "required": ["date", "amount"]
+      },
+      "OwnerExpense": {
+        "title": "OwnerExpense",
+        "type": "object",
+        "description": "Represents a personal expense paid by the owner from COD.",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Date of the expense.",
+            "format": "date-time"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount of the expense."
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the expense."
+          }
+        },
+        "required": ["date", "amount", "description"]
       }
   },
   "auth": {
@@ -144,6 +165,10 @@
     "/company_cod_payments/{paymentId}": {
         "schema": { "$ref": "#/entities/CompanyCodPayment" },
         "description": "Stores all COD payments made to the company."
+    },
+    "/owner_expenses/{expenseId}": {
+        "schema": { "$ref": "#/entities/OwnerExpense" },
+        "description": "Stores personal expenses paid from COD."
     }
   }
 }

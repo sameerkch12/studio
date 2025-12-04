@@ -43,6 +43,13 @@ export type CompanyCodPayment = {
     notes?: string;
 };
 
+export type OwnerExpense = {
+    id: string;
+    date: Timestamp | Date;
+    amount: number;
+    description?: string;
+}
+
 export type DeliveryBoy = {
   id: string;
   name: string;

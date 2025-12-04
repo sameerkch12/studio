@@ -2,18 +2,19 @@
 
 import { useState, useMemo } from 'react';
 import type { DateRange } from "react-day-picker";
-import { PlusCircle, Wallet, X, FileDown, Building } from 'lucide-react';
+import { PlusCircle, Wallet, X, Building, Briefcase } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { collection, doc, Timestamp } from 'firebase/firestore';
 
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { AdvancePayment, DeliveryBoy, CompanyCodPayment, DeliveryEntry, DELIVERY_BOY_RATE } from '@/lib/types';
+import { AdvancePayment, DeliveryBoy, CompanyCodPayment, DeliveryEntry, DELIVERY_BOY_RATE, OwnerExpense } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import AdvanceForm from './AdvanceForm';
 import CompanyCodForm from './CompanyCodForm';
+import OwnerExpenseForm from './OwnerExpenseForm';
 import SummaryCards from './SummaryCards';
 import { DateRangePicker } from './DateRangePicker';
 import DeliveryForm from './DeliveryForm';
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [isAdvanceSheetOpen, setAdvanceSheetOpen] = useState(false);
   const [isCompanyCodSheetOpen, setCompanyCodSheetOpen] = useState(false);
   const [isDeliverySheetOpen, setDeliverySheetOpen] = useState(false);
+  const [isOwnerExpenseSheetOpen, setOwnerExpenseSheetOpen] = useState(false);
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [selectedBoy, setSelectedBoy] = useState('All');
@@ -35,17 +37,21 @@ export default function Dashboard() {
   const advancePaymentsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'advance_payments') : null, [firestore]);
   const deliveryBoysCollection = useMemoFirebase(() => firestore ? collection(firestore, 'delivery_boys') : null, [firestore]);
   const companyCodPaymentsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'company_cod_payments') : null, [firestore]);
+  const ownerExpensesCollection = useMemoFirebase(() => firestore ? collection(firestore, 'owner_expenses') : null, [firestore]);
+
 
   const { data: entriesData, isLoading: entriesLoading } = useCollection<Omit<DeliveryEntry, 'id'>>(deliveryRecordsCollection);
   const { data: advancesData, isLoading: advancesLoading } = useCollection<Omit<AdvancePayment, 'id'>>(advancePaymentsCollection);
   const { data: deliveryBoysData, isLoading: boysLoading } = useCollection<Omit<DeliveryBoy, 'id'>>(deliveryBoysCollection);
   const { data: companyCodPaymentsData, isLoading: companyCodPaymentsLoading } = useCollection<Omit<CompanyCodPayment, 'id'>>(companyCodPaymentsCollection);
+  const { data: ownerExpensesData, isLoading: ownerExpensesLoading } = useCollection<Omit<OwnerExpense, 'id'>>(ownerExpensesCollection);
 
 
   const entries = useMemo(() => entriesData?.map(e => ({...e, date: (e.date as Timestamp).toDate()})) || [], [entriesData]);
   const advances = useMemo(() => advancesData?.map(a => ({...a, date: (a.date as Timestamp).toDate()})) || [], [advancesData]);
   const deliveryBoys = useMemo(() => deliveryBoysData?.map(b => b.name).sort((a, b) => a.localeCompare(b)) || [], [deliveryBoysData]);
   const companyCodPayments = useMemo(() => companyCodPaymentsData?.map(p => ({...p, date: (p.date as Timestamp).toDate()})) || [], [companyCodPaymentsData]);
+  const ownerExpenses = useMemo(() => ownerExpensesData?.map(e => ({...e, date: (e.date as Timestamp).toDate()})) || [], [ownerExpensesData]);
 
 
   const addEntry = (entry: Omit<DeliveryEntry, 'id'>) => {
@@ -80,6 +86,15 @@ export default function Dashboard() {
     setCompanyCodSheetOpen(false);
   }
 
+  const addOwnerExpense = (expense: Omit<OwnerExpense, 'id'>) => {
+    if (!ownerExpensesCollection) return;
+    addDocumentNonBlocking(ownerExpensesCollection, {
+      ...expense,
+      date: Timestamp.fromDate(expense.date as Date)
+    });
+    setOwnerExpenseSheetOpen(false);
+  }
+
   const filterByDate = <T extends { date: Date }>(items: T[]): T[] => {
     if (!dateRange?.from) return items;
     const toDate = dateRange.to ? new Date(dateRange.to) : new Date(dateRange.from);
@@ -93,8 +108,9 @@ export default function Dashboard() {
   const filteredEntries = filterByDate(entries);
   const filteredAdvances = filterByDate(advances);
   const filteredCompanyCodPayments = filterByDate(companyCodPayments);
+  const filteredOwnerExpenses = filterByDate(ownerExpenses);
   
-  const isLoading = entriesLoading || advancesLoading || boysLoading || companyCodPaymentsLoading;
+  const isLoading = entriesLoading || advancesLoading || boysLoading || companyCodPaymentsLoading || ownerExpensesLoading;
 
   const handleExcelExport = () => {
      const boyFilteredEntries = filteredEntries.filter(entry => selectedBoy === 'All' || entry.deliveryBoyName === selectedBoy);
@@ -175,7 +191,7 @@ export default function Dashboard() {
                 </Button>
             )}
           </div>
-          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full sm:w-auto">
              <Sheet open={isDeliverySheetOpen} onOpenChange={setDeliverySheetOpen}>
               <SheetTrigger asChild>
                 <Button className="w-full">
@@ -197,7 +213,7 @@ export default function Dashboard() {
             <Sheet open={isCompanyCodSheetOpen} onOpenChange={setCompanyCodSheetOpen}>
                 <SheetTrigger asChild>
                     <Button variant="outline" className="w-full">
-                        <Building className="mr-2 h-4 w-4" /> To Company
+                        <Building className="mr-2 h-4 w-4" /> Company
                     </Button>
                 </SheetTrigger>
                 <SheetContent className="w-full max-w-full sm:max-w-lg overflow-y-auto">
@@ -209,6 +225,24 @@ export default function Dashboard() {
                     </SheetHeader>
                     <div className="py-4">
                         <CompanyCodForm onAddPayment={addCompanyCodPayment} />
+                    </div>
+                </SheetContent>
+            </Sheet>
+            <Sheet open={isOwnerExpenseSheetOpen} onOpenChange={setOwnerExpenseSheetOpen}>
+                <SheetTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                        <Briefcase className="mr-2 h-4 w-4" /> Expense
+                    </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full max-w-full sm:max-w-lg overflow-y-auto">
+                    <SheetHeader>
+                        <SheetTitle>Add Owner Expense</SheetTitle>
+                        <SheetDescription>
+                            Record a personal expense paid from the collected COD amount.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="py-4">
+                        <OwnerExpenseForm onAddExpense={addOwnerExpense} />
                     </div>
                 </SheetContent>
             </Sheet>
@@ -234,13 +268,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <SummaryCards entries={filteredEntries} advances={filteredAdvances} companyCodPayments={filteredCompanyCodPayments} isLoading={isLoading} />
+      <SummaryCards entries={filteredEntries} advances={filteredAdvances} companyCodPayments={filteredCompanyCodPayments} ownerExpenses={filteredOwnerExpenses} isLoading={isLoading} />
       
       <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-7">
         <div className="lg:col-span-4">
           <DeliveryTable 
               data={filteredEntries}
               advances={filteredAdvances}
+              ownerExpenses={filteredOwnerExpenses}
               onDeleteEntry={deleteEntry}
               deliveryBoys={deliveryBoys}
               selectedBoy={selectedBoy}
@@ -250,7 +285,7 @@ export default function Dashboard() {
           />
         </div>
         <div className="lg:col-span-3">
-          <EarningsChart entries={finalFilteredEntries} advances={finalFilteredAdvances} isLoading={isLoading} />
+          <EarningsChart entries={finalFilteredEntries} advances={finalFilteredAdvances} ownerExpenses={filteredOwnerExpenses} isLoading={isLoading} />
         </div>
       </div>
 
