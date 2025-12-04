@@ -43,12 +43,10 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
   const overallMetrics = calculateMetrics(entries, advances, companyCodPayments);
 
   const bhilaiEntries = entries.filter(e => e.pincode === Pincodes.BHILAI_3);
-  const bhilaiAdvances = advances.filter(a => bhilaiEntries.some(e => e.deliveryBoyName === a.deliveryBoyName && e.date === a.date)); // This is an approximation
-  const bhilaiMetrics = calculateMetrics(bhilaiEntries, bhilaiAdvances, []);
+  const bhilaiMetrics = calculateMetrics(bhilaiEntries, [], []);
 
   const charodaEntries = entries.filter(e => e.pincode === Pincodes.CHARODA);
-  const charodaAdvances = advances.filter(a => charodaEntries.some(e => e.deliveryBoyName === a.deliveryBoyName && e.date === a.date)); // This is an approximation
-  const charodaMetrics = calculateMetrics(charodaEntries, charodaAdvances, []);
+  const charodaMetrics = calculateMetrics(charodaEntries, [], []);
 
   const formatCurrency = (amount: number) => {
     return `Rs ${new Intl.NumberFormat('en-IN', {
@@ -109,7 +107,7 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(overallMetrics.totalProfit)}</div>
-          <p className="text-xs text-muted-foreground">Bhilai-3: {formatCurrency(bhilaiMetrics.totalProfit)}, Charoda: {formatCurrency(charodaMetrics.totalProfit)}</p>
+          <p className="text-xs text-muted-foreground">Total profit from all areas</p>
         </CardContent>
       </Card>
     </div>
