@@ -31,9 +31,9 @@ const calculateMetrics = (entries: DeliveryEntry[], advances: AdvancePayment[], 
     const totalGrossPayout = totalWork * DELIVERY_BOY_RATE;
     const totalNetPayout = totalGrossPayout - totalAdvance - totalCodShortage;
     
-    const profitBhilai3 = (totalWorkBhilai3 + totalRVP) * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
+    const profitBhilai3 = totalWorkBhilai3 * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
     const profitCharoda = totalWorkCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
-    const totalProfit = profitBhilai3 + profitCharoda;
+    const totalProfit = profitBhilai3 + profitCharoda; // Profit only from delivered parcels
 
     return { totalWork, codInHand, totalPaidToCompany, totalNetPayout, totalProfit, totalWorkBhilai3, totalWorkCharoda, totalActualCod, totalAdvance, totalRVP };
 }

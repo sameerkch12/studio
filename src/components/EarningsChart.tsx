@@ -46,10 +46,9 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
 
       const profitBhilai3 = workBhilai3 * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
       const profitCharoda = workCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
-      const profitRVP = workRVP * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE); // Assume RVP profit is same as Bhilai-3
-
+      
       acc[name].payout += totalWork * DELIVERY_BOY_RATE;
-      acc[name].profit += profitBhilai3 + profitCharoda + profitRVP;
+      acc[name].profit += profitBhilai3 + profitCharoda; // Profit only from delivered parcels
       acc[name].advance += entry.advance || 0; // on-spot advance
       acc[name].codShortage += (entry.expectedCod || 0) - (entry.actualCodCollected || 0);
     } else { // It's an AdvancePayment
