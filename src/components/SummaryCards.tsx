@@ -12,37 +12,30 @@ type SummaryCardsProps = {
 };
 
 const calculateMetrics = (entries: DeliveryEntry[], advances: AdvancePayment[], companyCodPayments: CompanyCodPayment[]) => {
-    const totalWorkBhilai3 = entries.reduce((acc, entry) => acc + entry.delivered_bhilai3, 0);
-    const totalWorkCharoda = entries.reduce((acc, entry) => acc + entry.delivered_charoda, 0);
-    const totalRVP = entries.reduce((acc, entry) => acc + entry.rvp, 0);
-    // For calculation purposes, let's assume RVP work is split or assigned a default rate.
-    // A simple approach is to add RVP to a default or more common pincode's work count for rate calculation.
-    // Here we will calculate gross earning based on pincode specific deliveries.
+    const totalWorkBhilai3 = entries.reduce((acc, entry) => acc + (entry.delivered_bhilai3 || 0), 0);
+    const totalWorkCharoda = entries.reduce((acc, entry) => acc + (entry.delivered_charoda || 0), 0);
+    const totalRVP = entries.reduce((acc, entry) => acc + (entry.rvp || 0), 0);
     
     const totalWork = totalWorkBhilai3 + totalWorkCharoda + totalRVP;
     
-    const totalActualCod = entries.reduce((acc, entry) => acc + entry.actualCodCollected, 0);
-    const totalPaidToCompany = companyCodPayments.reduce((acc, payment) => acc + payment.amount, 0);
+    const totalActualCod = entries.reduce((acc, entry) => acc + (entry.actualCodCollected || 0), 0);
+    const totalPaidToCompany = companyCodPayments.reduce((acc, payment) => acc + (payment.amount || 0), 0);
     const codInHand = totalActualCod - totalPaidToCompany;
     
-    const totalOnSpotAdvance = entries.reduce((acc, entry) => acc + entry.advance, 0);
-    const totalSeparateAdvance = advances.reduce((acc, adv) => acc + adv.amount, 0);
+    const totalOnSpotAdvance = entries.reduce((acc, entry) => acc + (entry.advance || 0), 0);
+    const totalSeparateAdvance = advances.reduce((acc, adv) => acc + (adv.amount || 0), 0);
     const totalAdvance = totalOnSpotAdvance + totalSeparateAdvance;
     
-    const totalCodShortage = entries.reduce((acc, entry) => acc + (entry.expectedCod - entry.actualCodCollected), 0);
+    const totalCodShortage = entries.reduce((acc, entry) => acc + ((entry.expectedCod || 0) - (entry.actualCodCollected || 0)), 0);
 
     const totalGrossPayout = totalWork * DELIVERY_BOY_RATE;
     const totalNetPayout = totalGrossPayout - totalAdvance - totalCodShortage;
     
-    const companyEarningBhilai3 = (totalWorkBhilai3 + totalRVP) * COMPANY_RATES[Pincodes.BHILAI_3]; // Assuming RVP is priced as Bhilai3
-    const companyEarningCharoda = totalWorkCharoda * COMPANY_RATES[Pincodes.CHARODA];
-    const totalCompanyEarning = companyEarningBhilai3 + companyEarningCharoda;
-
     const profitBhilai3 = (totalWorkBhilai3 + totalRVP) * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
     const profitCharoda = totalWorkCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
     const totalProfit = profitBhilai3 + profitCharoda;
 
-    return { totalWork, codInHand, totalPaidToCompany, totalNetPayout, totalProfit, totalWorkBhilai3, totalWorkCharoda, totalActualCod, totalAdvance };
+    return { totalWork, codInHand, totalPaidToCompany, totalNetPayout, totalProfit, totalWorkBhilai3, totalWorkCharoda, totalActualCod, totalAdvance, totalRVP };
 }
 
 const SummaryCard = ({ title, value, footer, icon: Icon, isLoading }: { title: string; value: string; footer: string; icon: React.ElementType; isLoading: boolean; }) => {
@@ -86,7 +79,7 @@ export default function SummaryCards({ entries, advances, companyCodPayments, is
       <SummaryCard 
         title="Total Work" 
         value={overallMetrics.totalWork.toLocaleString('en-IN')} 
-        footer={`Bhilai-3: ${overallMetrics.totalWorkBhilai3}, Charoda: ${overallMetrics.totalWorkCharoda}`}
+        footer={`B3: ${overallMetrics.totalWorkBhilai3}, Ch: ${overallMetrics.totalWorkCharoda}, RVP: ${overallMetrics.totalRVP}`}
         icon={PackageCheck}
         isLoading={isLoading}
       />

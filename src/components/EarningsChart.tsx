@@ -63,7 +63,7 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
   const chartData = Object.values(dataByBoy).map(boy => ({
       ...boy,
       netPayout: boy.payout - boy.advance - boy.codShortage,
-  })).sort((a,b) => (b.payout + b.profit) - (a.payout + a.profit));
+  })).sort((a,b) => (b.netPayout + b.profit) - (a.netPayout + a.profit));
   
   const chartConfig = {
     netPayout: {
@@ -119,7 +119,7 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
                       <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] mr-2" style={{backgroundColor: item.color}} />
                       <div className="flex flex-1 justify-between">
                         <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label || name}</span>
-                        <span className="font-bold">{formatCurrency(Number(value))}</span>
+                        <span className="font-bold">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0}).format(Number(value))}</span>
                       </div>
                     </div>
                   )}
