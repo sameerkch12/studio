@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import Header from '@/components/Header';
+import AppLayout from '@/components/AppLayout';
 
 export const metadata: Metadata = {
   title: 'Delivery Tracker Pro',
@@ -24,9 +25,9 @@ export default function RootLayout({
       <body className="font-body antialiased flex flex-col min-h-screen">
         <FirebaseClientProvider>
           <Header />
-          <div className="flex-1">
+          <AppLayout>
             {children}
-          </div>
+          </AppLayout>
         </FirebaseClientProvider>
         <Toaster />
         <footer className="bg-card border-t p-4 shadow-sm mt-auto">

@@ -53,6 +53,7 @@ type DeliveryTableProps = {
   pincodes: string[];
   selectedPincode: string;
   onSelectPincode: (pincode: string) => void;
+  showPincodeColumn?: boolean;
 };
 
 type Transaction = (Omit<DeliveryEntry, 'date'> & { date: Date, type: 'delivery' }) | (Omit<AdvancePayment, 'date'> & { date: Date, type: 'advance' });
@@ -69,6 +70,7 @@ export default function DeliveryTable({
     pincodes,
     selectedPincode,
     onSelectPincode,
+    showPincodeColumn = true,
 }: DeliveryTableProps) {
   const formatCurrency = (amount: number) => {
     return `Rs ${new Intl.NumberFormat('en-IN', {
@@ -109,16 +111,18 @@ export default function DeliveryTable({
           <CardDescription>A list of all delivery and payment records.</CardDescription>
         </div>
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
-            <Select value={selectedPincode} onValueChange={onSelectPincode}>
-                <SelectTrigger className="w-full md:min-w-[180px]">
-                    <SelectValue placeholder="Select Pincode" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="All">All Pincodes</SelectItem>
-                    <SelectItem value={Pincodes.BHILAI_3}>Bhilai-3 ({Pincodes.BHILAI_3})</SelectItem>
-                    <SelectItem value={Pincodes.CHARODA}>Charoda ({Pincodes.CHARODA})</SelectItem>
-                </SelectContent>
-            </Select>
+            {pincodes.length > 0 && (
+                <Select value={selectedPincode} onValueChange={onSelectPincode}>
+                    <SelectTrigger className="w-full md:min-w-[180px]">
+                        <SelectValue placeholder="Select Pincode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="All">All Pincodes</SelectItem>
+                        <SelectItem value={Pincodes.BHILAI_3}>Bhilai-3 ({Pincodes.BHILAI_3})</SelectItem>
+                        <SelectItem value={Pincodes.CHARODA}>Charoda ({Pincodes.CHARODA})</SelectItem>
+                    </SelectContent>
+                </Select>
+            )}
             <Select value={selectedBoy} onValueChange={onSelectBoy}>
                 <SelectTrigger className="w-full md:min-w-[180px]">
                 <SelectValue placeholder="Select Delivery Boy" />
@@ -141,9 +145,8 @@ export default function DeliveryTable({
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
-              {(selectedBoy === 'All' && selectedPincode !== 'All') && <TableHead>Delivery Boy</TableHead>}
-              {(selectedPincode === 'All' && selectedBoy !== 'All') && <TableHead>Pincode</TableHead>}
-              {(selectedBoy === 'All' && selectedPincode === 'All') && <><TableHead>Delivery Boy</TableHead><TableHead>Pincode</TableHead></>}
+              {selectedBoy === 'All' && <TableHead>Delivery Boy</TableHead>}
+              {showPincodeColumn && selectedPincode === 'All' && <TableHead>Pincode</TableHead>}
               <TableHead className="text-center">Stats</TableHead>
               <TableHead className="text-center">Total</TableHead>
               <TableHead className="text-right">COD</TableHead>
@@ -177,7 +180,7 @@ export default function DeliveryTable({
                 const grossPayout = totalParcels * DELIVERY_BOY_RATE;
                 
                 const showBoy = selectedBoy === 'All';
-                const showPincode = selectedPincode === 'All';
+                const showPincode = showPincodeColumn && selectedPincode === 'All';
                 const colSpan = 4 - (showBoy ? 1 : 0) - (showPincode ? 1 : 0);
 
 
@@ -317,5 +320,3 @@ export default function DeliveryTable({
     </Card>
   );
 }
-
-    

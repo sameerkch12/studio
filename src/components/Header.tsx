@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from 'next/navigation';
-import { Truck, Users, LayoutDashboard } from 'lucide-react';
+import { Truck, Users, LayoutDashboard, MapPin } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { Pincodes } from "@/lib/types";
 
 const navLinks = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/bhilai-3', label: `Bhilai-3 (${Pincodes.BHILAI_3})`, icon: MapPin },
+    { href: '/charoda', label: `Charoda (${Pincodes.CHARODA})`, icon: MapPin },
     { href: '/boys', label: 'Delivery Boys', icon: Users },
 ]
 
