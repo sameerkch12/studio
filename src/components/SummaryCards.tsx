@@ -1,5 +1,5 @@
 import type { DeliveryEntry, AdvancePayment, CompanyCodPayment, Pincode } from "@/lib/types";
-import { DELIVERY_BOY_RATE, COMPANY_RATES } from "@/lib/types";
+import { DELIVERY_BOY_RATE, COMPANY_RATES, Pincodes } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IndianRupee, PackageCheck, TrendingUp, Wallet, Building, Coins } from "lucide-react";
 
@@ -9,31 +9,46 @@ type SummaryCardsProps = {
   companyCodPayments: CompanyCodPayment[];
 };
 
+const calculateMetrics = (entries: DeliveryEntry[], advances: AdvancePayment[], companyCodPayments: CompanyCodPayment[]) => {
+    const totalDelivered = entries.reduce((acc, entry) => acc + entry.delivered, 0);
+    const totalRVP = entries.reduce((acc, entry) => acc + entry.rvp, 0);
+    const totalWork = totalDelivered + totalRVP;
+    
+    const totalActualCod = entries.reduce((acc, entry) => acc + entry.actualCodCollected, 0);
+    const totalPaidToCompany = companyCodPayments.reduce((acc, payment) => acc + payment.amount, 0);
+    const codInHand = totalActualCod - totalPaidToCompany;
+    
+    const totalOnSpotAdvance = entries.reduce((acc, entry) => acc + entry.advance, 0);
+    const totalSeparateAdvance = advances.reduce((acc, adv) => acc + adv.amount, 0);
+    const totalAdvance = totalOnSpotAdvance + totalSeparateAdvance;
+    
+    const totalCodShortage = entries.reduce((acc, entry) => acc + (entry.expectedCod - entry.actualCodCollected), 0);
+
+    const totalGrossPayout = totalWork * DELIVERY_BOY_RATE;
+    const totalNetPayout = totalGrossPayout - totalAdvance - totalCodShortage;
+    
+    const totalCompanyEarning = entries.reduce((acc, entry) => {
+        const workDone = entry.delivered + entry.rvp;
+        const companyRate = COMPANY_RATES[entry.pincode as Pincode] || 0;
+        return acc + (workDone * companyRate);
+    }, 0);
+
+    const totalProfit = totalCompanyEarning - totalGrossPayout;
+
+    return { totalWork, codInHand, totalPaidToCompany, totalNetPayout, totalProfit, totalDelivered, totalRVP, totalActualCod, totalAdvance };
+}
+
+
 export default function SummaryCards({ entries, advances, companyCodPayments }: SummaryCardsProps) {
-  const totalDelivered = entries.reduce((acc, entry) => acc + entry.delivered, 0);
-  const totalRVP = entries.reduce((acc, entry) => acc + entry.rvp, 0);
-  const totalWork = totalDelivered + totalRVP;
-  
-  const totalActualCod = entries.reduce((acc, entry) => acc + entry.actualCodCollected, 0);
-  const totalPaidToCompany = companyCodPayments.reduce((acc, payment) => acc + payment.amount, 0);
-  const codInHand = totalActualCod - totalPaidToCompany;
-  
-  const totalOnSpotAdvance = entries.reduce((acc, entry) => acc + entry.advance, 0);
-  const totalSeparateAdvance = advances.reduce((acc, adv) => acc + adv.amount, 0);
-  const totalAdvance = totalOnSpotAdvance + totalSeparateAdvance;
-  
-  const totalCodShortage = entries.reduce((acc, entry) => acc + (entry.expectedCod - entry.actualCodCollected), 0);
+  const overallMetrics = calculateMetrics(entries, advances, companyCodPayments);
 
-  const totalGrossPayout = totalWork * DELIVERY_BOY_RATE;
-  const totalNetPayout = totalGrossPayout - totalAdvance - totalCodShortage;
-  
-  const totalCompanyEarning = entries.reduce((acc, entry) => {
-      const workDone = entry.delivered + entry.rvp;
-      const companyRate = COMPANY_RATES[entry.pincode as Pincode] || 0;
-      return acc + (workDone * companyRate);
-  }, 0);
+  const bhilaiEntries = entries.filter(e => e.pincode === Pincodes.BHILAI_3);
+  const bhilaiAdvances = advances.filter(a => bhilaiEntries.some(e => e.deliveryBoyName === a.deliveryBoyName && e.date === a.date)); // This is an approximation
+  const bhilaiMetrics = calculateMetrics(bhilaiEntries, bhilaiAdvances, []);
 
-  const totalProfit = totalCompanyEarning - totalGrossPayout;
+  const charodaEntries = entries.filter(e => e.pincode === Pincodes.CHARODA);
+  const charodaAdvances = advances.filter(a => charodaEntries.some(e => e.deliveryBoyName === a.deliveryBoyName && e.date === a.date)); // This is an approximation
+  const charodaMetrics = calculateMetrics(charodaEntries, charodaAdvances, []);
 
   const formatCurrency = (amount: number) => {
     return `Rs ${new Intl.NumberFormat('en-IN', {
@@ -49,8 +64,10 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
           <PackageCheck className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totalWork.toLocaleString('en-IN')}</div>
-          <p className="text-xs text-muted-foreground">{totalDelivered} Delivered + {totalRVP} RVP</p>
+          <div className="text-2xl font-bold">{overallMetrics.totalWork.toLocaleString('en-IN')}</div>
+          <p className="text-xs text-muted-foreground">
+            Bhilai-3: {bhilaiMetrics.totalWork}, Charoda: {charodaMetrics.totalWork}
+          </p>
         </CardContent>
       </Card>
       <Card>
@@ -59,9 +76,9 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
           <Coins className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(codInHand)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(overallMetrics.codInHand)}</div>
           <p className="text-xs text-muted-foreground">
-            {formatCurrency(totalActualCod)} collected
+            {formatCurrency(overallMetrics.totalActualCod)} collected
           </p>
         </CardContent>
       </Card>
@@ -71,7 +88,7 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
           <Building className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalPaidToCompany)}</div>
+          <div className="text-2xl font-bold">{formatCurrency(overallMetrics.totalPaidToCompany)}</div>
           <p className="text-xs text-muted-foreground">Total paid to company</p>
         </CardContent>
       </Card>
@@ -81,8 +98,8 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
           <Wallet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalNetPayout)}</div>
-          <p className="text-xs text-muted-foreground">after {formatCurrency(totalAdvance)} advance</p>
+          <div className="text-2xl font-bold">{formatCurrency(overallMetrics.totalNetPayout)}</div>
+          <p className="text-xs text-muted-foreground">after {formatCurrency(overallMetrics.totalAdvance)} advance</p>
         </CardContent>
       </Card>
       <Card>
@@ -91,8 +108,8 @@ export default function SummaryCards({ entries, advances, companyCodPayments }: 
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(totalProfit)}</div>
-          <p className="text-xs text-muted-foreground">after all payouts</p>
+          <div className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(overallMetrics.totalProfit)}</div>
+          <p className="text-xs text-muted-foreground">Bhilai-3: {formatCurrency(bhilaiMetrics.totalProfit)}, Charoda: {formatCurrency(charodaMetrics.totalProfit)}</p>
         </CardContent>
       </Card>
     </div>
