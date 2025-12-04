@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2, AlertTriangle, FileDown, Wallet, MapPin } from 'lucide-react';
 
 import type { DeliveryEntry, AdvancePayment, Pincode } from '@/lib/types';
-import { DELIVERY_BOY_RATE, COMPANY_RATES } from '@/lib/types';
+import { DELIVERY_BOY_RATE, Pincodes } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -50,19 +50,35 @@ type DeliveryTableProps = {
   onSelectBoy: (name: string) => void;
   onExport: () => void;
   isLoading: boolean;
+  pincodes: string[];
+  selectedPincode: string;
+  onSelectPincode: (pincode: string) => void;
 };
 
 type Transaction = (Omit<DeliveryEntry, 'date'> & { date: Date, type: 'delivery' }) | (Omit<AdvancePayment, 'date'> & { date: Date, type: 'advance' });
 
-export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryBoys, selectedBoy, onSelectBoy, onExport, isLoading }: DeliveryTableProps) {
+export default function DeliveryTable({ 
+    data, 
+    advances, 
+    onDeleteEntry, 
+    deliveryBoys, 
+    selectedBoy, 
+    onSelectBoy, 
+    onExport, 
+    isLoading,
+    pincodes,
+    selectedPincode,
+    onSelectPincode,
+}: DeliveryTableProps) {
   const formatCurrency = (amount: number) => {
     return `Rs ${new Intl.NumberFormat('en-IN', {
       minimumFractionDigits: 0,
     }).format(amount)}`;
   };
   
-  const filteredData = data.filter(d => selectedBoy === 'All' || d.deliveryBoyName === selectedBoy);
-  const filteredAdvances = advances.filter(a => selectedBoy === 'All' || a.deliveryBoyName === selectedBoy);
+  const filteredData = data.filter(d => (selectedBoy === 'All' || d.deliveryBoyName === selectedBoy) && (selectedPincode === 'All' || d.pincode === selectedPincode));
+  const filteredAdvances = advances.filter(a => (selectedBoy === 'All' || a.deliveryBoyName === selectedBoy));
+
 
   const allTransactions: Transaction[] = [
     ...filteredData.map(d => ({ ...d, type: 'delivery' as const, date: new Date(d.date) })),
@@ -93,8 +109,18 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
           <CardDescription>A list of all delivery and payment records.</CardDescription>
         </div>
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
+            <Select value={selectedPincode} onValueChange={onSelectPincode}>
+                <SelectTrigger className="w-full md:min-w-[180px]">
+                    <SelectValue placeholder="Select Pincode" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="All">All Pincodes</SelectItem>
+                    <SelectItem value={Pincodes.BHILAI_3}>Bhilai-3 ({Pincodes.BHILAI_3})</SelectItem>
+                    <SelectItem value={Pincodes.CHARODA}>Charoda ({Pincodes.CHARODA})</SelectItem>
+                </SelectContent>
+            </Select>
             <Select value={selectedBoy} onValueChange={onSelectBoy}>
-                <SelectTrigger className="w-full md:min-w-[200px]">
+                <SelectTrigger className="w-full md:min-w-[180px]">
                 <SelectValue placeholder="Select Delivery Boy" />
                 </SelectTrigger>
                 <SelectContent>
@@ -115,8 +141,9 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
-              {selectedBoy === 'All' && <TableHead>Delivery Boy</TableHead>}
-              <TableHead>Pincode</TableHead>
+              {(selectedBoy === 'All' && selectedPincode !== 'All') && <TableHead>Delivery Boy</TableHead>}
+              {(selectedPincode === 'All' && selectedBoy !== 'All') && <TableHead>Pincode</TableHead>}
+              {(selectedBoy === 'All' && selectedPincode === 'All') && <><TableHead>Delivery Boy</TableHead><TableHead>Pincode</TableHead></>}
               <TableHead className="text-center">Stats</TableHead>
               <TableHead className="text-center">Total</TableHead>
               <TableHead className="text-right">COD</TableHead>
@@ -131,7 +158,7 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={selectedBoy === 'All' ? 9 : 8}>
+                  <TableCell colSpan={9}>
                     <Skeleton className="h-8 w-full" />
                   </TableCell>
                 </TableRow>
@@ -139,7 +166,7 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
             ) : transactionsWithBalance.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={9} className="h-24 text-center">
-                    No records found. Add a new entry to get started.
+                    No records found for the selected filter.
                     </TableCell>
                 </TableRow>
             ) : transactionsWithBalance.map((transaction) => {
@@ -148,19 +175,25 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
                 const codShortage = entry.expectedCod - entry.actualCodCollected;
                 const totalParcels = entry.delivered + entry.rvp;
                 const grossPayout = totalParcels * DELIVERY_BOY_RATE;
+                
+                const showBoy = selectedBoy === 'All';
+                const showPincode = selectedPincode === 'All';
+                const colSpan = 4 - (showBoy ? 1 : 0) - (showPincode ? 1 : 0);
+
 
                 return (
                 <TableRow key={entry.id}>
                   <TableCell className="font-medium whitespace-nowrap">
                     {format(new Date(entry.date), 'dd MMM yyyy')}
                   </TableCell>
-                  {selectedBoy === 'All' && <TableCell className="whitespace-nowrap">{entry.deliveryBoyName}</TableCell>}
-                  <TableCell>
+                  {showBoy && <TableCell className="whitespace-nowrap">{entry.deliveryBoyName}</TableCell>}
+                  {showPincode && <TableCell>
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-4 w-4" />
                         <span>{entry.pincode}</span>
                     </div>
-                  </TableCell>
+                  </TableCell>}
+                  
                   <TableCell>
                     <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
                       <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100/80">
@@ -250,13 +283,16 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
                 )
               } else { // Render an Advance row
                 const advance = transaction;
+                const showBoy = selectedBoy === 'All';
+                const colSpan = 5 - (showBoy ? 1 : 0);
+
                 return (
                     <TableRow key={advance.id} className="bg-muted/30">
                          <TableCell className="font-medium whitespace-nowrap">
                             {format(new Date(advance.date), 'dd MMM yyyy')}
                         </TableCell>
-                        {selectedBoy === 'All' && <TableCell className="whitespace-nowrap">{advance.deliveryBoyName}</TableCell>}
-                        <TableCell colSpan={4} className="text-center text-sm text-muted-foreground italic">
+                        {showBoy && <TableCell className="whitespace-nowrap">{advance.deliveryBoyName}</TableCell>}
+                        <TableCell colSpan={colSpan} className="text-center text-sm text-muted-foreground italic">
                             <div className="flex items-center justify-center gap-2">
                                 <Wallet className="h-4 w-4"/>
                                 <span>Separate Advance Paid</span>
@@ -281,3 +317,5 @@ export default function DeliveryTable({ data, advances, onDeleteEntry, deliveryB
     </Card>
   );
 }
+
+    

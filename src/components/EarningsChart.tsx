@@ -30,6 +30,7 @@ type EarningsChartProps = {
 export default function EarningsChart({ entries, advances, isLoading }: EarningsChartProps) {
   
   const dataByBoy = [...entries, ...advances].reduce((acc, item) => {
+    if (!item.deliveryBoyName) return acc;
     const name = item.deliveryBoyName;
     if (!acc[name]) {
       acc[name] = { name, payout: 0, profit: 0, advance: 0, codShortage: 0 };
@@ -132,3 +133,5 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
     </Card>
   );
 }
+
+    

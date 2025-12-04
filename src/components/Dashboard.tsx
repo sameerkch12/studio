@@ -8,7 +8,7 @@ import { saveAs } from 'file-saver';
 import { collection, doc, Timestamp } from 'firebase/firestore';
 
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import type { DeliveryEntry, AdvancePayment, DeliveryBoy, CompanyCodPayment } from '@/lib/types';
+import { DeliveryEntry, AdvancePayment, DeliveryBoy, CompanyCodPayment, Pincodes } from '@/lib/types';
 import { DELIVERY_BOY_RATE, COMPANY_RATES } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import DeliveryTable from './DeliveryTable';
 import SummaryCards from './SummaryCards';
 import EarningsChart from './EarningsChart';
 import { DateRangePicker } from './DateRangePicker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 export default function Dashboard() {
   const [isDeliverySheetOpen, setDeliverySheetOpen] = useState(false);
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [isCompanyCodSheetOpen, setCompanyCodSheetOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [selectedBoy, setSelectedBoy] = useState('All');
+  const [selectedPincode, setSelectedPincode] = useState('All');
 
   const firestore = useFirestore();
 
@@ -104,8 +106,9 @@ export default function Dashboard() {
   });
 
   const finalFilteredEntries = filteredEntriesByDate.filter(entry => {
-      if (selectedBoy === 'All') return true;
-      return entry.deliveryBoyName === selectedBoy;
+      const boyMatch = selectedBoy === 'All' || entry.deliveryBoyName === selectedBoy;
+      const pincodeMatch = selectedPincode === 'All' || entry.pincode === selectedPincode;
+      return boyMatch && pincodeMatch;
   });
 
   const handleExcelExport = () => {
@@ -237,7 +240,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <SummaryCards entries={filteredEntriesByDate} advances={filteredAdvancesByDate} companyCodPayments={filteredCompanyCodByDate} />
+      <SummaryCards entries={finalFilteredEntries} advances={filteredAdvancesByDate} companyCodPayments={filteredCompanyCodByDate} />
 
       <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-7">
         <div className="lg:col-span-4">
@@ -250,12 +253,17 @@ export default function Dashboard() {
                 onSelectBoy={setSelectedBoy}
                 onExport={handleExcelExport}
                 isLoading={isLoading}
+                pincodes={Object.values(Pincodes)}
+                selectedPincode={selectedPincode}
+                onSelectPincode={setSelectedPincode}
             />
         </div>
         <div className="lg:col-span-3">
-            <EarningsChart entries={filteredEntriesByDate} advances={filteredAdvancesByDate} isLoading={isLoading} />
+            <EarningsChart entries={finalFilteredEntries} advances={filteredAdvancesByDate} isLoading={isLoading} />
         </div>
       </div>
     </div>
   );
 }
+
+    
