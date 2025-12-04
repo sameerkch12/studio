@@ -247,6 +247,7 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
             )}
             />
         </div>
+        
         <div className="grid grid-cols-2 gap-4">
             <FormField
             control={form.control}
@@ -280,25 +281,6 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
                 </FormItem>
             )}
             />
-        </div>
-
-        {form.watch('actualCodCollected') < form.watch('expectedCod') && (
-            <FormField
-                control={form.control}
-                name="codShortageReason"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Reason for COD Shortage</FormLabel>
-                    <FormControl>
-                        <Textarea placeholder="e.g. Customer paid less, parcel lost..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-        )}
-        
-        <div className="grid grid-cols-2 gap-4">
             <FormField
             control={form.control}
             name="rvp"
@@ -329,6 +311,23 @@ export default function DeliveryForm({ onAddEntry, deliveryBoys }: DeliveryFormP
             )}
             />
         </div>
+
+        {form.watch('actualCodCollected') < form.watch('expectedCod') && (
+            <FormField
+                control={form.control}
+                name="codShortageReason"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Reason for COD Shortage</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="e.g. Customer paid less, parcel lost..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        )}
+        
         <Button type="submit" className="w-full">Add Entry</Button>
       </form>
     </Form>
