@@ -43,17 +43,13 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
       const workRVP = entry.rvp || 0;
       
       const totalWork = workBhilai3 + workCharoda + workRVP;
-      const totalDeliveredWork = workBhilai3 + workCharoda;
 
-      // Split RVP work for more accurate profit calculation if both areas have deliveries
-      const rvpForBhilai3 = totalDeliveredWork > 0 ? workRVP * (workBhilai3 / totalDeliveredWork) : workRVP;
-      const rvpForCharoda = totalDeliveredWork > 0 ? workRVP * (workCharoda / totalDeliveredWork) : 0;
-
-      const profitBhilai3 = (workBhilai3 + rvpForBhilai3) * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
-      const profitCharoda = (workCharoda + rvpForCharoda) * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
+      const profitBhilai3 = workBhilai3 * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
+      const profitCharoda = workCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
+      const profitRVP = workRVP * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE); // Assume RVP profit is same as Bhilai-3
 
       acc[name].payout += totalWork * DELIVERY_BOY_RATE;
-      acc[name].profit += profitBhilai3 + profitCharoda;
+      acc[name].profit += profitBhilai3 + profitCharoda + profitRVP;
       acc[name].advance += entry.advance || 0; // on-spot advance
       acc[name].codShortage += (entry.expectedCod || 0) - (entry.actualCodCollected || 0);
     } else { // It's an AdvancePayment
