@@ -84,9 +84,9 @@ export default function DeliveryTable({
       let payout = 0;
       if (transaction.type === 'delivery') {
           const entry = transaction as DeliveryEntry;
-          const codShortage = entry.expectedCod - entry.actualCodCollected;
-          const totalWork = entry.delivered_bhilai3 + entry.delivered_charoda + entry.rvp;
-          payout = totalWork * DELIVERY_BOY_RATE - entry.advance - codShortage;
+          const codShortage = (entry.expectedCod || 0) - (entry.actualCodCollected || 0);
+          const totalWork = (entry.delivered_bhilai3 || 0) + (entry.delivered_charoda || 0) + (entry.rvp || 0);
+          payout = totalWork * DELIVERY_BOY_RATE - (entry.advance || 0) - codShortage;
           runningBalance += payout;
       } else {
           const adv = transaction as AdvancePayment;
@@ -157,12 +157,11 @@ export default function DeliveryTable({
             ) : transactionsWithBalance.map((transaction) => {
               if (transaction.type === 'delivery') {
                 const entry = transaction;
-                const codShortage = entry.expectedCod - entry.actualCodCollected;
-                const totalWork = entry.delivered_bhilai3 + entry.delivered_charoda + entry.rvp;
+                const codShortage = (entry.expectedCod || 0) - (entry.actualCodCollected || 0);
+                const totalWork = (entry.delivered_bhilai3 || 0) + (entry.delivered_charoda || 0) + (entry.rvp || 0);
                 const grossPayout = totalWork * DELIVERY_BOY_RATE;
                 
                 const showBoy = selectedBoy === 'All';
-                const colSpan = 5 - (showBoy ? 1 : 0);
 
                 return (
                 <TableRow key={entry.id}>
@@ -173,20 +172,20 @@ export default function DeliveryTable({
                   
                   <TableCell className="text-center">
                     <div className="flex flex-col">
-                        <span>{entry.delivered_bhilai3} <span className='text-muted-foreground'>Del</span></span>
-                        <span className="text-xs text-yellow-600">{entry.returned_bhilai3} <span className='text-muted-foreground'>Ret</span></span>
+                        <span>{entry.delivered_bhilai3 || 0} <span className='text-muted-foreground'>Del</span></span>
+                        <span className="text-xs text-yellow-600">{entry.returned_bhilai3 || 0} <span className='text-muted-foreground'>Ret</span></span>
                     </div>
                   </TableCell>
                    <TableCell className="text-center">
                     <div className="flex flex-col">
-                        <span>{entry.delivered_charoda} <span className='text-muted-foreground'>Del</span></span>
-                        <span className="text-xs text-yellow-600">{entry.returned_charoda} <span className='text-muted-foreground'>Ret</span></span>
+                        <span>{entry.delivered_charoda || 0} <span className='text-muted-foreground'>Del</span></span>
+                        <span className="text-xs text-yellow-600">{entry.returned_charoda || 0} <span className='text-muted-foreground'>Ret</span></span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">{entry.rvp}</TableCell>
+                  <TableCell className="text-center">{entry.rvp || 0}</TableCell>
                   <TableCell className="text-center font-bold">{totalWork}</TableCell>
                   <TableCell className="text-right">
-                    <div>{formatCurrency(entry.actualCodCollected)}</div>
+                    <div>{formatCurrency(entry.actualCodCollected || 0)}</div>
                     {codShortage > 0 ? (
                       <TooltipProvider>
                           <Tooltip>
@@ -201,7 +200,7 @@ export default function DeliveryTable({
                           </Tooltip>
                       </TooltipProvider>
                     ) : (
-                      <div className="text-xs text-muted-foreground">of {formatCurrency(entry.expectedCod)}</div>
+                      <div className="text-xs text-muted-foreground">of {formatCurrency(entry.expectedCod || 0)}</div>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -209,9 +208,9 @@ export default function DeliveryTable({
                       <div className="text-xs text-muted-foreground whitespace-nowrap">
                           ({totalWork} x {DELIVERY_BOY_RATE} = {formatCurrency(grossPayout)})
                       </div>
-                      {(entry.advance > 0 || codShortage > 0) && (
+                      {((entry.advance || 0) > 0 || codShortage > 0) && (
                           <div className="text-xs text-muted-foreground whitespace-nowrap">
-                              {entry.advance > 0 && ` - Adv ${formatCurrency(entry.advance)}`}
+                              {(entry.advance || 0) > 0 && ` - Adv ${formatCurrency(entry.advance || 0)}`}
                               {codShortage > 0 && ` - Short ${formatCurrency(codShortage)}`}
                           </div>
                       )}
