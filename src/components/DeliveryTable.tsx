@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
-import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2, AlertTriangle, FileDown, Wallet, MapPin } from 'lucide-react';
+import { MoreHorizontal, Trash2, AlertTriangle, FileDown, Wallet, Briefcase } from 'lucide-react';
 
-import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment, OwnerExpense } from '@/lib/types';
 import { DELIVERY_BOY_RATE } from '@/lib/types';
 import {
   Table,
@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -44,6 +43,7 @@ import { Skeleton } from './ui/skeleton';
 type DeliveryTableProps = {
   data: DeliveryEntry[];
   advances: AdvancePayment[];
+  ownerExpenses: OwnerExpense[];
   onDeleteEntry: (id: string) => void;
   deliveryBoys: string[];
   selectedBoy: string;
@@ -52,11 +52,16 @@ type DeliveryTableProps = {
   isLoading: boolean;
 };
 
-type Transaction = (Omit<DeliveryEntry, 'date'> & { date: Date, type: 'delivery' }) | (Omit<AdvancePayment, 'date'> & { date: Date, type: 'advance' });
+type Transaction = 
+    | (Omit<DeliveryEntry, 'date'> & { date: Date, type: 'delivery' }) 
+    | (Omit<AdvancePayment, 'date'> & { date: Date, type: 'advance' })
+    | (Omit<OwnerExpense, 'date'> & { date: Date, type: 'owner_expense' });
+
 
 export default function DeliveryTable({ 
     data, 
     advances, 
+    ownerExpenses,
     onDeleteEntry, 
     deliveryBoys, 
     selectedBoy, 
@@ -72,11 +77,13 @@ export default function DeliveryTable({
   
   const filteredData = data.filter(d => (selectedBoy === 'All' || d.deliveryBoyName === selectedBoy));
   const filteredAdvances = advances.filter(a => (selectedBoy === 'All' || a.deliveryBoyName === selectedBoy));
+  const filteredOwnerExpenses = ownerExpenses; // Owner expenses are not boy-specific
 
 
   const allTransactions: Transaction[] = [
     ...filteredData.map(d => ({ ...d, type: 'delivery' as const, date: new Date(d.date) })),
-    ...filteredAdvances.map(a => ({ ...a, type: 'advance' as const, date: new Date(a.date) }))
+    ...filteredAdvances.map(a => ({ ...a, type: 'advance' as const, date: new Date(a.date) })),
+    ...filteredOwnerExpenses.map(e => ({ ...e, type: 'owner_expense' as const, date: new Date(e.date) }))
   ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   let runningBalance = 0;
@@ -88,11 +95,13 @@ export default function DeliveryTable({
           const totalWork = (entry.delivered_bhilai3 || 0) + (entry.delivered_charoda || 0) + (entry.rvp || 0);
           payout = totalWork * DELIVERY_BOY_RATE - (entry.advance || 0) - codShortage;
           runningBalance += payout;
-      } else {
+      } else if (transaction.type === 'advance') {
           const adv = transaction as AdvancePayment;
           payout = -adv.amount;
           runningBalance += payout;
       }
+      // Owner expense does not affect boy's running balance, so we don't calculate it here.
+      // It is only for display in the table.
       return { ...transaction, payout, balance: runningBalance };
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
@@ -155,14 +164,14 @@ export default function DeliveryTable({
                     </TableCell>
                 </TableRow>
             ) : transactionsWithBalance.map((transaction) => {
+              const showBoy = selectedBoy === 'All';
+
               if (transaction.type === 'delivery') {
                 const entry = transaction;
                 const codShortage = (entry.expectedCod || 0) - (entry.actualCodCollected || 0);
                 const totalWork = (entry.delivered_bhilai3 || 0) + (entry.delivered_charoda || 0) + (entry.rvp || 0);
                 const grossPayout = totalWork * DELIVERY_BOY_RATE;
                 
-                const showBoy = selectedBoy === 'All';
-
                 return (
                 <TableRow key={entry.id}>
                   <TableCell className="font-medium whitespace-nowrap">
@@ -254,9 +263,8 @@ export default function DeliveryTable({
                   </TableCell>
                 </TableRow>
                 )
-              } else { // Render an Advance row
+              } else if (transaction.type === 'advance') {
                 const advance = transaction;
-                const showBoy = selectedBoy === 'All';
                 const colSpan = 6 - (showBoy ? 1 : 0);
 
                 return (
@@ -279,6 +287,37 @@ export default function DeliveryTable({
                         </TableCell>
                         <TableCell>
                             {/* Add delete functionality for advances if needed */}
+                        </TableCell>
+                    </TableRow>
+                )
+              } else { // Render an Owner Expense row
+                const expense = transaction;
+                const colSpan = 8 - (showBoy ? 1 : 0);
+
+                return (
+                    <TableRow key={expense.id} className="bg-yellow-100/30 dark:bg-yellow-900/30">
+                         <TableCell className="font-medium whitespace-nowrap">
+                            {format(new Date(expense.date), 'dd MMM yyyy')}
+                        </TableCell>
+                        {showBoy && <TableCell></TableCell>}
+                        <TableCell colSpan={colSpan} className="text-center text-sm text-muted-foreground italic">
+                            <div className="flex items-center justify-center gap-2">
+                                <Briefcase className="h-4 w-4"/>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="cursor-help">Owner Expense</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{expense.description}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                ({formatCurrency(expense.amount)})
+                            </div>
+                        </TableCell>
+                         <TableCell>
+                            {/* No actions for owner expense yet */}
                         </TableCell>
                     </TableRow>
                 )

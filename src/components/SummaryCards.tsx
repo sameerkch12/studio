@@ -1,4 +1,4 @@
-import type { DeliveryEntry, AdvancePayment, CompanyCodPayment } from "@/lib/types";
+import type { DeliveryEntry, AdvancePayment, CompanyCodPayment, OwnerExpense } from "@/lib/types";
 import { DELIVERY_BOY_RATE, COMPANY_RATES, Pincodes } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PackageCheck, TrendingUp, Wallet, Building, Coins } from "lucide-react";
@@ -8,10 +8,11 @@ type SummaryCardsProps = {
   entries: DeliveryEntry[];
   advances: AdvancePayment[];
   companyCodPayments: CompanyCodPayment[];
+  ownerExpenses: OwnerExpense[];
   isLoading: boolean;
 };
 
-const calculateMetrics = (entries: DeliveryEntry[], advances: AdvancePayment[], companyCodPayments: CompanyCodPayment[]) => {
+const calculateMetrics = (entries: DeliveryEntry[], advances: AdvancePayment[], companyCodPayments: CompanyCodPayment[], ownerExpenses: OwnerExpense[]) => {
     const totalWorkBhilai3 = entries.reduce((acc, entry) => acc + (entry.delivered_bhilai3 || 0), 0);
     const totalWorkCharoda = entries.reduce((acc, entry) => acc + (entry.delivered_charoda || 0), 0);
     const totalRVP = entries.reduce((acc, entry) => acc + (entry.rvp || 0), 0);
@@ -20,21 +21,25 @@ const calculateMetrics = (entries: DeliveryEntry[], advances: AdvancePayment[], 
     
     const totalActualCod = entries.reduce((acc, entry) => acc + (entry.actualCodCollected || 0), 0);
     const totalPaidToCompany = companyCodPayments.reduce((acc, payment) => acc + (payment.amount || 0), 0);
-    const codInHand = totalActualCod - totalPaidToCompany;
+    const totalOwnerExpense = ownerExpenses.reduce((acc, expense) => acc + (expense.amount || 0), 0);
+    const codInHand = totalActualCod - totalPaidToCompany - totalOwnerExpense;
     
     const totalOnSpotAdvance = entries.reduce((acc, entry) => acc + (entry.advance || 0), 0);
     const totalSeparateAdvance = advances.reduce((acc, adv) => acc + (adv.amount || 0), 0);
     const totalAdvance = totalOnSpotAdvance + totalSeparateAdvance;
     
-    const totalCodShortage = entries.reduce((acc, entry) => acc + ((entry.expectedCod || 0) - (entry.actualCodCollected || 0)), 0);
+    const totalCodShortage = entries.reduce((acc, entry) => {
+        const shortage = (entry.expectedCod || 0) - (entry.actualCodCollected || 0);
+        return acc + (shortage > 0 ? shortage : 0);
+    }, 0);
 
     const totalGrossPayout = totalWork * DELIVERY_BOY_RATE;
     const totalNetPayout = totalGrossPayout - totalAdvance - totalCodShortage;
     
     const profitBhilai3 = totalWorkBhilai3 * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
     const profitCharoda = totalWorkCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
-    const profitRVP = totalRVP * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE); // Assume RVP profit is same as Bhilai-3
-    const totalProfit = profitBhilai3 + profitCharoda + profitRVP;
+    const profitRVP = totalRVP * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
+    const totalProfit = profitBhilai3 + profitCharoda + profitRVP - totalOwnerExpense;
 
     return { totalWork, codInHand, totalPaidToCompany, totalNetPayout, totalProfit, totalWorkBhilai3, totalWorkCharoda, totalActualCod, totalAdvance, totalRVP };
 }
@@ -66,8 +71,8 @@ const SummaryCard = ({ title, value, footer, icon: Icon, isLoading }: { title: s
 };
 
 
-export default function SummaryCards({ entries, advances, companyCodPayments, isLoading }: SummaryCardsProps) {
-  const overallMetrics = calculateMetrics(entries, advances, companyCodPayments);
+export default function SummaryCards({ entries, advances, companyCodPayments, ownerExpenses, isLoading }: SummaryCardsProps) {
+  const overallMetrics = calculateMetrics(entries, advances, companyCodPayments, ownerExpenses);
 
   const formatCurrency = (amount: number) => {
     return `Rs ${new Intl.NumberFormat('en-IN', {
@@ -118,8 +123,8 @@ export default function SummaryCards({ entries, advances, companyCodPayments, is
                 </>
             ) : (
                 <>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-500">{formatCurrency(overallMetrics.totalProfit)}</div>
-                    <p className="text-xs text-muted-foreground">Total profit from all areas</p>
+                    <div className={`text-2xl font-bold ${overallMetrics.totalProfit >= 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'}`}>{formatCurrency(overallMetrics.totalProfit)}</div>
+                    <p className="text-xs text-muted-foreground">After all expenses</p>
                 </>
             )}
         </CardContent>

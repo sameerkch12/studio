@@ -1,7 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment, OwnerExpense } from '@/lib/types';
 import { DELIVERY_BOY_RATE, COMPANY_RATES, Pincodes } from '@/lib/types';
 
 import {
@@ -24,11 +24,14 @@ import { Skeleton } from './ui/skeleton';
 type EarningsChartProps = {
     entries: DeliveryEntry[];
     advances: AdvancePayment[];
+    ownerExpenses: OwnerExpense[];
     isLoading: boolean;
 }
 
-export default function EarningsChart({ entries, advances, isLoading }: EarningsChartProps) {
+export default function EarningsChart({ entries, advances, ownerExpenses, isLoading }: EarningsChartProps) {
   
+  const totalOwnerExpense = ownerExpenses.reduce((acc, e) => acc + e.amount, 0);
+
   const dataByBoy = [...entries, ...advances].reduce((acc, item) => {
     if (!item.deliveryBoyName) return acc;
     const name = item.deliveryBoyName;
@@ -46,12 +49,17 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
 
       const profitBhilai3 = workBhilai3 * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
       const profitCharoda = workCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
-      const profitRVP = workRVP * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE); // Assume RVP profit is same as Bhilai-3
+      const profitRVP = workRVP * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE); // RVP profit based on Bhilai-3 rate
       
       acc[name].payout += totalWork * DELIVERY_BOY_RATE;
       acc[name].profit += profitBhilai3 + profitCharoda + profitRVP;
       acc[name].advance += entry.advance || 0; // on-spot advance
-      acc[name].codShortage += (entry.expectedCod || 0) - (entry.actualCodCollected || 0);
+      
+      const shortage = (entry.expectedCod || 0) - (entry.actualCodCollected || 0);
+      if (shortage > 0) {
+        acc[name].codShortage += shortage;
+      }
+
     } else { // It's an AdvancePayment
       const advance = item as AdvancePayment;
       acc[name].advance += advance.amount;
@@ -60,17 +68,31 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
     return acc;
   }, {} as Record<string, { name: string; payout: number; profit: number, advance: number, codShortage: number }>);
 
-  const chartData = Object.values(dataByBoy).map(boy => ({
-      ...boy,
-      netPayout: boy.payout - boy.advance - boy.codShortage,
-  })).sort((a,b) => (b.netPayout + b.profit) - (a.netPayout + a.profit));
+  // Distribute owner expense among boys based on their profit share
+  const totalProfitBeforeExpense = Object.values(dataByBoy).reduce((acc, boy) => acc + boy.profit, 0);
+
+  const chartData = Object.values(dataByBoy).map(boy => {
+      const netPayout = boy.payout - boy.advance - boy.codShortage;
+      let netProfit = boy.profit;
+
+      if(totalProfitBeforeExpense > 0) {
+        const profitShare = boy.profit / totalProfitBeforeExpense;
+        netProfit -= (totalOwnerExpense * profitShare);
+      }
+      
+      return {
+          ...boy,
+          netPayout,
+          netProfit
+      }
+  }).sort((a,b) => (b.netPayout + b.netProfit) - (a.netPayout + a.netProfit));
   
   const chartConfig = {
     netPayout: {
       label: 'Net Payout',
       color: 'hsl(var(--chart-1))',
     },
-    profit: {
+    netProfit: {
       label: 'Your Profit',
       color: 'hsl(var(--chart-2))',
     },
@@ -91,7 +113,7 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
     <Card>
       <CardHeader>
         <CardTitle>Earnings Overview</CardTitle>
-        <CardDescription>Payout to delivery boys vs. your profit.</CardDescription>
+        <CardDescription>Payout to delivery boys vs. your net profit.</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -127,7 +149,7 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
               />
               <ChartLegend content={<ChartLegendContent />} />
               <Bar dataKey="netPayout" stackId="a" fill="var(--color-netPayout)" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="profit" stackId="a" fill="var(--color-profit)" radius={[4, 4, 4, 4]} />
+              <Bar dataKey="netProfit" stackId="a" fill="var(--color-netProfit)" radius={[4, 4, 4, 4]} />
             </BarChart>
           </ChartContainer>
         ) : (
