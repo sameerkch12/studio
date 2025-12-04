@@ -1,8 +1,8 @@
 import { format } from 'date-fns';
 import { MoreHorizontal, PackageCheck, PackageOpen, Trash2, Undo2, AlertTriangle, FileDown, Wallet, MapPin } from 'lucide-react';
 
-import type { DeliveryEntry, AdvancePayment, Pincode } from '@/lib/types';
-import { DELIVERY_BOY_RATE, Pincodes } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
+import { DELIVERY_BOY_RATE } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -50,10 +50,6 @@ type DeliveryTableProps = {
   onSelectBoy: (name: string) => void;
   onExport: () => void;
   isLoading: boolean;
-  pincodes: string[];
-  selectedPincode: string;
-  onSelectPincode: (pincode: string) => void;
-  showPincodeColumn?: boolean;
 };
 
 type Transaction = (Omit<DeliveryEntry, 'date'> & { date: Date, type: 'delivery' }) | (Omit<AdvancePayment, 'date'> & { date: Date, type: 'advance' });
@@ -67,10 +63,6 @@ export default function DeliveryTable({
     onSelectBoy, 
     onExport, 
     isLoading,
-    pincodes,
-    selectedPincode,
-    onSelectPincode,
-    showPincodeColumn = true,
 }: DeliveryTableProps) {
   const formatCurrency = (amount: number) => {
     return `Rs ${new Intl.NumberFormat('en-IN', {
@@ -78,7 +70,7 @@ export default function DeliveryTable({
     }).format(amount)}`;
   };
   
-  const filteredData = data.filter(d => (selectedBoy === 'All' || d.deliveryBoyName === selectedBoy) && (selectedPincode === 'All' || d.pincode === selectedPincode));
+  const filteredData = data.filter(d => (selectedBoy === 'All' || d.deliveryBoyName === selectedBoy));
   const filteredAdvances = advances.filter(a => (selectedBoy === 'All' || a.deliveryBoyName === selectedBoy));
 
 
@@ -93,7 +85,8 @@ export default function DeliveryTable({
       if (transaction.type === 'delivery') {
           const entry = transaction as DeliveryEntry;
           const codShortage = entry.expectedCod - entry.actualCodCollected;
-          payout = (entry.delivered + entry.rvp) * DELIVERY_BOY_RATE - entry.advance - codShortage;
+          const totalWork = entry.delivered_bhilai3 + entry.delivered_charoda + entry.rvp;
+          payout = totalWork * DELIVERY_BOY_RATE - entry.advance - codShortage;
           runningBalance += payout;
       } else {
           const adv = transaction as AdvancePayment;
@@ -111,18 +104,6 @@ export default function DeliveryTable({
           <CardDescription>A list of all delivery and payment records.</CardDescription>
         </div>
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
-            {pincodes.length > 0 && (
-                <Select value={selectedPincode} onValueChange={onSelectPincode}>
-                    <SelectTrigger className="w-full md:min-w-[180px]">
-                        <SelectValue placeholder="Select Pincode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="All">All Pincodes</SelectItem>
-                        <SelectItem value={Pincodes.BHILAI_3}>Bhilai-3 ({Pincodes.BHILAI_3})</SelectItem>
-                        <SelectItem value={Pincodes.CHARODA}>Charoda ({Pincodes.CHARODA})</SelectItem>
-                    </SelectContent>
-                </Select>
-            )}
             <Select value={selectedBoy} onValueChange={onSelectBoy}>
                 <SelectTrigger className="w-full md:min-w-[180px]">
                 <SelectValue placeholder="Select Delivery Boy" />
@@ -146,8 +127,9 @@ export default function DeliveryTable({
             <TableRow>
               <TableHead>Date</TableHead>
               {selectedBoy === 'All' && <TableHead>Delivery Boy</TableHead>}
-              {showPincodeColumn && selectedPincode === 'All' && <TableHead>Pincode</TableHead>}
-              <TableHead className="text-center">Stats</TableHead>
+              <TableHead className="text-center">Parcels (B3)</TableHead>
+              <TableHead className="text-center">Parcels (Ch)</TableHead>
+              <TableHead className="text-center">RVP</TableHead>
               <TableHead className="text-center">Total</TableHead>
               <TableHead className="text-right">COD</TableHead>
               <TableHead className="text-right">Payout / Advance</TableHead>
@@ -176,13 +158,11 @@ export default function DeliveryTable({
               if (transaction.type === 'delivery') {
                 const entry = transaction;
                 const codShortage = entry.expectedCod - entry.actualCodCollected;
-                const totalParcels = entry.delivered + entry.rvp;
-                const grossPayout = totalParcels * DELIVERY_BOY_RATE;
+                const totalWork = entry.delivered_bhilai3 + entry.delivered_charoda + entry.rvp;
+                const grossPayout = totalWork * DELIVERY_BOY_RATE;
                 
                 const showBoy = selectedBoy === 'All';
-                const showPincode = showPincodeColumn && selectedPincode === 'All';
-                const colSpan = 4 - (showBoy ? 1 : 0) - (showPincode ? 1 : 0);
-
+                const colSpan = 5 - (showBoy ? 1 : 0);
 
                 return (
                 <TableRow key={entry.id}>
@@ -190,30 +170,21 @@ export default function DeliveryTable({
                     {format(new Date(entry.date), 'dd MMM yyyy')}
                   </TableCell>
                   {showBoy && <TableCell className="whitespace-nowrap">{entry.deliveryBoyName}</TableCell>}
-                  {showPincode && <TableCell>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        <span>{entry.pincode}</span>
-                    </div>
-                  </TableCell>}
                   
-                  <TableCell>
-                    <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
-                      <Badge variant="secondary" className="flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-100/80">
-                        <PackageCheck className="h-3 w-3"/>
-                        <span>{entry.delivered} <span className="hidden sm:inline">Delivered</span></span>
-                      </Badge>
-                      <Badge variant="secondary" className="flex items-center gap-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 hover:bg-yellow-100/80">
-                        <Undo2 className="h-3 w-3"/>
-                        <span>{entry.returned} <span className="hidden sm:inline">Returned</span></span>
-                      </Badge>
-                      <Badge variant="secondary" className="flex items-center gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-100/80">
-                        <PackageOpen className="h-3 w-3"/>
-                        <span>{entry.rvp} <span className="hidden sm:inline">RVP</span></span>
-                      </Badge>
+                  <TableCell className="text-center">
+                    <div className="flex flex-col">
+                        <span>{entry.delivered_bhilai3} <span className='text-muted-foreground'>Del</span></span>
+                        <span className="text-xs text-yellow-600">{entry.returned_bhilai3} <span className='text-muted-foreground'>Ret</span></span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-center font-bold">{totalParcels}</TableCell>
+                   <TableCell className="text-center">
+                    <div className="flex flex-col">
+                        <span>{entry.delivered_charoda} <span className='text-muted-foreground'>Del</span></span>
+                        <span className="text-xs text-yellow-600">{entry.returned_charoda} <span className='text-muted-foreground'>Ret</span></span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">{entry.rvp}</TableCell>
+                  <TableCell className="text-center font-bold">{totalWork}</TableCell>
                   <TableCell className="text-right">
                     <div>{formatCurrency(entry.actualCodCollected)}</div>
                     {codShortage > 0 ? (
@@ -236,7 +207,7 @@ export default function DeliveryTable({
                   <TableCell className="text-right">
                       <div className="font-semibold text-primary">{formatCurrency(transaction.payout)}</div>
                       <div className="text-xs text-muted-foreground whitespace-nowrap">
-                          ({totalParcels} x {DELIVERY_BOY_RATE} = {formatCurrency(grossPayout)})
+                          ({totalWork} x {DELIVERY_BOY_RATE} = {formatCurrency(grossPayout)})
                       </div>
                       {(entry.advance > 0 || codShortage > 0) && (
                           <div className="text-xs text-muted-foreground whitespace-nowrap">
@@ -287,7 +258,7 @@ export default function DeliveryTable({
               } else { // Render an Advance row
                 const advance = transaction;
                 const showBoy = selectedBoy === 'All';
-                const colSpan = 5 - (showBoy ? 1 : 0);
+                const colSpan = 6 - (showBoy ? 1 : 0);
 
                 return (
                     <TableRow key={advance.id} className="bg-muted/30">

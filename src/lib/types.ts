@@ -16,9 +16,12 @@ export type DeliveryEntry = {
   id: string;
   date: Timestamp | Date;
   deliveryBoyName: string;
-  pincode: Pincode;
-  delivered: number;
-  returned: number;
+  // Pincode specific fields are now part of the main entry
+  delivered_bhilai3: number;
+  returned_bhilai3: number;
+  delivered_charoda: number;
+  returned_charoda: number;
+  // Common fields
   expectedCod: number;
   actualCodCollected: number;
   codShortageReason?: string;

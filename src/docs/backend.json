@@ -1,0 +1,149 @@
+
+{
+  "entities": {
+    "DeliveryBoy": {
+      "title": "DeliveryBoy",
+      "type": "object",
+      "description": "Represents a delivery boy in the system.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the delivery boy."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the delivery boy was added."
+        }
+      },
+      "required": ["name", "createdAt"]
+    },
+    "DeliveryRecord": {
+      "title": "DeliveryRecord",
+      "type": "object",
+      "description": "Represents a daily delivery record for a delivery boy.",
+      "properties": {
+        "deliveryBoyName": {
+          "type": "string",
+          "description": "Name of the delivery boy."
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the delivery record.",
+          "format": "date-time"
+        },
+        "delivered_bhilai3": {
+            "type": "number",
+            "description": "Number of parcels delivered in Bhilai-3."
+        },
+        "returned_bhilai3": {
+            "type": "number",
+            "description": "Number of parcels returned in Bhilai-3."
+        },
+        "delivered_charoda": {
+            "type": "number",
+            "description": "Number of parcels delivered in Charoda."
+        },
+        "returned_charoda": {
+            "type": "number",
+            "description": "Number of parcels returned in Charoda."
+        },
+        "expectedCod": {
+          "type": "number",
+          "description": "Expected COD amount."
+        },
+        "actualCodCollected": {
+          "type": "number",
+          "description": "Actual COD amount collected."
+        },
+        "codShortageReason": {
+          "type": "string",
+          "description": "Reason for any COD shortage."
+        },
+        "rvp": {
+          "type": "number",
+          "description": "Number of RVP (Return to Vendor Pickup) pickups."
+        },
+        "advance": {
+          "type": "number",
+          "description": "On-spot advance paid."
+        }
+      },
+      "required": [
+        "deliveryBoyName",
+        "date",
+        "delivered_bhilai3",
+        "returned_bhilai3",
+        "delivered_charoda",
+        "returned_charoda",
+        "expectedCod",
+        "actualCodCollected",
+        "rvp",
+        "advance"
+      ]
+    },
+    "AdvancePayment": {
+      "title": "AdvancePayment",
+      "type": "object",
+      "description": "Represents a separate advance payment to a delivery boy.",
+      "properties": {
+        "deliveryBoyName": {
+          "type": "string",
+          "description": "Name of the delivery boy receiving the advance."
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the advance payment.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of advance paid."
+        }
+      },
+      "required": ["deliveryBoyName", "date", "amount"]
+    },
+    "CompanyCodPayment": {
+        "title": "CompanyCodPayment",
+        "type": "object",
+        "description": "Represents a COD amount paid to the main company.",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Date of the payment to the company.",
+            "format": "date-time"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount of COD paid."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional notes for the payment."
+          }
+        },
+        "required": ["date", "amount"]
+      }
+  },
+  "auth": {
+    "providers": ["anonymous"]
+  },
+  "firestore": {
+    "/delivery_records/{recordId}": {
+      "schema": { "$ref": "#/entities/DeliveryRecord" },
+      "description": "Stores all delivery records from all delivery boys."
+    },
+    "/advance_payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/AdvancePayment" },
+      "description": "Stores all separate advance payments made."
+    },
+    "/delivery_boys/{boyId}": {
+      "schema": { "$ref": "#/entities/DeliveryBoy" },
+      "description": "Stores the list of all delivery boys."
+    },
+    "/company_cod_payments/{paymentId}": {
+        "schema": { "$ref": "#/entities/CompanyCodPayment" },
+        "description": "Stores all COD payments made to the company."
+    }
+  }
+}

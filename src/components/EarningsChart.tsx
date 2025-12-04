@@ -1,8 +1,8 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-import type { DeliveryEntry, AdvancePayment, Pincode } from '@/lib/types';
-import { DELIVERY_BOY_RATE, COMPANY_RATES } from '@/lib/types';
+import type { DeliveryEntry, AdvancePayment } from '@/lib/types';
+import { DELIVERY_BOY_RATE, COMPANY_RATES, Pincodes } from '@/lib/types';
 
 import {
   Card,
@@ -36,14 +36,22 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
       acc[name] = { name, payout: 0, profit: 0, advance: 0, codShortage: 0 };
     }
 
-    if ('delivered' in item) { // It's a DeliveryEntry
+    if ('delivered_bhilai3' in item) { // It's a DeliveryEntry
       const entry = item as DeliveryEntry;
-      const workDone = entry.delivered + entry.rvp;
-      const companyRate = COMPANY_RATES[entry.pincode as Pincode] || 0;
-      const profitRate = companyRate - DELIVERY_BOY_RATE;
+      const workBhilai3 = entry.delivered_bhilai3;
+      const workCharoda = entry.delivered_charoda;
+      const workRVP = entry.rvp;
+      
+      const totalWork = workBhilai3 + workCharoda + workRVP;
 
-      acc[name].payout += workDone * DELIVERY_BOY_RATE;
-      acc[name].profit += workDone * profitRate;
+      const profitBhilai3 = workBhilai3 * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
+      const profitCharoda = workCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
+       // RVP profit is based on an assumed pincode or average, let's assume Bhilai rate for simplicity or it could be handled differently
+      const profitRVP = workRVP * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
+
+
+      acc[name].payout += totalWork * DELIVERY_BOY_RATE;
+      acc[name].profit += profitBhilai3 + profitCharoda + profitRVP;
       acc[name].advance += entry.advance; // on-spot advance
       acc[name].codShortage += entry.expectedCod - entry.actualCodCollected;
     } else { // It's an AdvancePayment
@@ -133,5 +141,3 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
     </Card>
   );
 }
-
-    

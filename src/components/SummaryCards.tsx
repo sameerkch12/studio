@@ -1,7 +1,7 @@
-import type { DeliveryEntry, AdvancePayment, CompanyCodPayment, Pincode } from "@/lib/types";
+import type { DeliveryEntry, AdvancePayment, CompanyCodPayment } from "@/lib/types";
 import { DELIVERY_BOY_RATE, COMPANY_RATES, Pincodes } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IndianRupee, PackageCheck, TrendingUp, Wallet, Building, Coins } from "lucide-react";
+import { PackageCheck, TrendingUp, Wallet, Building, Coins } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
 
 type SummaryCardsProps = {
@@ -12,9 +12,14 @@ type SummaryCardsProps = {
 };
 
 const calculateMetrics = (entries: DeliveryEntry[], advances: AdvancePayment[], companyCodPayments: CompanyCodPayment[]) => {
-    const totalDelivered = entries.reduce((acc, entry) => acc + entry.delivered, 0);
+    const totalWorkBhilai3 = entries.reduce((acc, entry) => acc + entry.delivered_bhilai3, 0);
+    const totalWorkCharoda = entries.reduce((acc, entry) => acc + entry.delivered_charoda, 0);
     const totalRVP = entries.reduce((acc, entry) => acc + entry.rvp, 0);
-    const totalWork = totalDelivered + totalRVP;
+    // For calculation purposes, let's assume RVP work is split or assigned a default rate.
+    // A simple approach is to add RVP to a default or more common pincode's work count for rate calculation.
+    // Here we will calculate gross earning based on pincode specific deliveries.
+    
+    const totalWork = totalWorkBhilai3 + totalWorkCharoda + totalRVP;
     
     const totalActualCod = entries.reduce((acc, entry) => acc + entry.actualCodCollected, 0);
     const totalPaidToCompany = companyCodPayments.reduce((acc, payment) => acc + payment.amount, 0);
@@ -29,15 +34,15 @@ const calculateMetrics = (entries: DeliveryEntry[], advances: AdvancePayment[], 
     const totalGrossPayout = totalWork * DELIVERY_BOY_RATE;
     const totalNetPayout = totalGrossPayout - totalAdvance - totalCodShortage;
     
-    const totalCompanyEarning = entries.reduce((acc, entry) => {
-        const workDone = entry.delivered + entry.rvp;
-        const companyRate = COMPANY_RATES[entry.pincode as Pincode] || 0;
-        return acc + (workDone * companyRate);
-    }, 0);
+    const companyEarningBhilai3 = (totalWorkBhilai3 + totalRVP) * COMPANY_RATES[Pincodes.BHILAI_3]; // Assuming RVP is priced as Bhilai3
+    const companyEarningCharoda = totalWorkCharoda * COMPANY_RATES[Pincodes.CHARODA];
+    const totalCompanyEarning = companyEarningBhilai3 + companyEarningCharoda;
 
-    const totalProfit = totalCompanyEarning - totalGrossPayout;
+    const profitBhilai3 = (totalWorkBhilai3 + totalRVP) * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
+    const profitCharoda = totalWorkCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
+    const totalProfit = profitBhilai3 + profitCharoda;
 
-    return { totalWork, codInHand, totalPaidToCompany, totalNetPayout, totalProfit, totalDelivered, totalRVP, totalActualCod, totalAdvance };
+    return { totalWork, codInHand, totalPaidToCompany, totalNetPayout, totalProfit, totalWorkBhilai3, totalWorkCharoda, totalActualCod, totalAdvance };
 }
 
 const SummaryCard = ({ title, value, footer, icon: Icon, isLoading }: { title: string; value: string; footer: string; icon: React.ElementType; isLoading: boolean; }) => {
@@ -70,11 +75,6 @@ const SummaryCard = ({ title, value, footer, icon: Icon, isLoading }: { title: s
 export default function SummaryCards({ entries, advances, companyCodPayments, isLoading }: SummaryCardsProps) {
   const overallMetrics = calculateMetrics(entries, advances, companyCodPayments);
 
-  const bhilaiEntries = entries.filter(e => e.pincode === Pincodes.BHILAI_3);
-  const charodaEntries = entries.filter(e => e.pincode === Pincodes.CHARODA);
-  const bhilaiMetrics = calculateMetrics(bhilaiEntries, [], []);
-  const charodaMetrics = calculateMetrics(charodaEntries, [], []);
-
   const formatCurrency = (amount: number) => {
     return `Rs ${new Intl.NumberFormat('en-IN', {
       minimumFractionDigits: 0,
@@ -86,7 +86,7 @@ export default function SummaryCards({ entries, advances, companyCodPayments, is
       <SummaryCard 
         title="Total Work" 
         value={overallMetrics.totalWork.toLocaleString('en-IN')} 
-        footer={`Bhilai-3: ${bhilaiMetrics.totalWork}, Charoda: ${charodaMetrics.totalWork}`}
+        footer={`Bhilai-3: ${overallMetrics.totalWorkBhilai3}, Charoda: ${overallMetrics.totalWorkCharoda}`}
         icon={PackageCheck}
         isLoading={isLoading}
       />
