@@ -38,22 +38,24 @@ export default function EarningsChart({ entries, advances, isLoading }: Earnings
 
     if ('delivered_bhilai3' in item) { // It's a DeliveryEntry
       const entry = item as DeliveryEntry;
-      const workBhilai3 = entry.delivered_bhilai3;
-      const workCharoda = entry.delivered_charoda;
-      const workRVP = entry.rvp;
+      const workBhilai3 = entry.delivered_bhilai3 || 0;
+      const workCharoda = entry.delivered_charoda || 0;
+      const workRVP = entry.rvp || 0;
       
       const totalWork = workBhilai3 + workCharoda + workRVP;
+      const totalDeliveredWork = workBhilai3 + workCharoda;
 
-      const profitBhilai3 = workBhilai3 * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
-      const profitCharoda = workCharoda * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
-       // RVP profit is based on an assumed pincode or average, let's assume Bhilai rate for simplicity or it could be handled differently
-      const profitRVP = workRVP * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
+      // Split RVP work for more accurate profit calculation if both areas have deliveries
+      const rvpForBhilai3 = totalDeliveredWork > 0 ? workRVP * (workBhilai3 / totalDeliveredWork) : workRVP;
+      const rvpForCharoda = totalDeliveredWork > 0 ? workRVP * (workCharoda / totalDeliveredWork) : 0;
 
+      const profitBhilai3 = (workBhilai3 + rvpForBhilai3) * (COMPANY_RATES[Pincodes.BHILAI_3] - DELIVERY_BOY_RATE);
+      const profitCharoda = (workCharoda + rvpForCharoda) * (COMPANY_RATES[Pincodes.CHARODA] - DELIVERY_BOY_RATE);
 
       acc[name].payout += totalWork * DELIVERY_BOY_RATE;
-      acc[name].profit += profitBhilai3 + profitCharoda + profitRVP;
-      acc[name].advance += entry.advance; // on-spot advance
-      acc[name].codShortage += entry.expectedCod - entry.actualCodCollected;
+      acc[name].profit += profitBhilai3 + profitCharoda;
+      acc[name].advance += entry.advance || 0; // on-spot advance
+      acc[name].codShortage += (entry.expectedCod || 0) - (entry.actualCodCollected || 0);
     } else { // It's an AdvancePayment
       const advance = item as AdvancePayment;
       acc[name].advance += advance.amount;
